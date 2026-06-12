@@ -1,0 +1,1881 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MKF APP — Control de Inventario</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#F5F4F0;--surface:#FFFFFF;--border:#E2E0DA;--border-strong:#C8C5BC;
+  --text:#1A1916;--text-2:#6B6860;--text-3:#9E9C97;
+  --accent:#F2B600;--accent-dark:#0A0A0A;
+  --blue:#1A4FBF;--blue-light:#EEF2FC;
+  --danger:#C0392B;--danger-light:#FDF2F1;
+  --warn:#B35C00;--warn-light:#FEF5EB;
+  --success:#1E7A4A;--success-light:#EDFAF3;
+  --radius:8px;--radius-lg:12px;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);
+  --font:'DM Sans',sans-serif;--mono:'DM Mono',monospace;
+}
+body{font-family:var(--font);background:var(--bg);color:var(--text);font-size:14px;line-height:1.5;-webkit-font-smoothing:antialiased;}
+.topbar{background:#0A0A0A;border-bottom:3px solid var(--accent);padding:0 24px;display:flex;align-items:center;justify-content:space-between;height:56px;position:fixed;top:0;left:0;right:0;z-index:100;}
+.topbar-brand{display:flex;align-items:center;gap:10px;}
+.topbar-logo{width:30px;height:30px;background:var(--accent);border-radius:6px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:16px;color:#0A0A0A;}
+.topbar-title{color:#fff;font-weight:700;font-size:15px;letter-spacing:0.04em;}
+.topbar-sub{color:#9E9C97;font-size:11px;margin-left:8px;}
+.topbar-data{display:flex;align-items:center;gap:10px;}
+.topbar-data button{background:transparent;border:1px solid #3a3a3a;color:#ccc;font-size:12px;padding:6px 12px;border-radius:var(--radius);cursor:pointer;font-family:var(--font);transition:all .12s;}
+.topbar-data button:hover{background:#1a1a1a;color:#fff;}
+.app-shell{display:flex;padding-top:56px;min-height:100vh;}
+.sidebar{width:224px;min-height:calc(100vh - 56px);background:var(--surface);border-right:1px solid var(--border);position:fixed;top:56px;left:0;bottom:0;display:flex;flex-direction:column;}
+.main-content{margin-left:224px;padding:32px;min-height:calc(100vh - 56px);width:calc(100% - 224px);}
+.sidebar-nav{padding:12px 8px;flex:1;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius);font-size:13px;font-weight:500;color:var(--text-2);cursor:pointer;transition:all 0.12s;border:none;background:none;width:100%;text-align:left;margin-bottom:2px;}
+.nav-item:hover{background:var(--bg);color:var(--text);}
+.nav-item.active{background:#FEF6DD;color:#8a6800;}
+.nav-icon{font-size:16px;width:20px;text-align:center;}
+.sidebar-foot{padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text-3);}
+.page{display:none;}
+.page.active{display:block;}
+.page-header{margin-bottom:24px;}
+.page-header h1{font-size:22px;font-weight:600;}
+.page-header p{font-size:13px;color:var(--text-2);margin-top:4px;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);box-shadow:var(--shadow);}
+.card-body{padding:20px 24px;}
+.card-title{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:16px;}
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px;}
+.metrics.cols3{grid-template-columns:repeat(3,1fr);}
+.metric-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:16px 20px;}
+.metric-label{font-size:11px;color:var(--text-3);font-weight:500;text-transform:uppercase;letter-spacing:0.06em;}
+.metric-value{font-size:28px;font-weight:600;color:var(--text);margin-top:4px;line-height:1;}
+.form-grid{display:grid;gap:16px;}
+.form-grid.cols2{grid-template-columns:1fr 1fr;}
+.form-grid.cols3{grid-template-columns:1fr 1fr 1fr;}
+.field{display:flex;flex-direction:column;gap:6px;}
+.field label{font-size:12px;font-weight:500;color:var(--text-2);}
+.field input,.field select,.field textarea{font-family:var(--font);font-size:14px;color:var(--text);background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:8px 12px;outline:none;transition:border-color 0.12s;width:100%;}
+.field input:focus,.field select:focus,.field textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(26,79,191,0.08);}
+.field textarea{resize:vertical;min-height:72px;}
+.sku-input{font-family:var(--mono)!important;font-size:13px!important;letter-spacing:0.04em;}
+.btn{display:inline-flex;align-items:center;gap:6px;font-family:var(--font);font-size:13px;font-weight:500;padding:8px 16px;border-radius:var(--radius);cursor:pointer;transition:all 0.12s;border:1px solid transparent;}
+.btn-primary{background:var(--accent-dark);color:#fff;border-color:var(--accent-dark);}
+.btn-primary:hover{background:#2a2a2a;}
+.btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+.btn-secondary{background:var(--surface);color:var(--text);border-color:var(--border);}
+.btn-secondary:hover{background:var(--bg);}
+.btn-danger{background:var(--danger-light);color:var(--danger);border-color:#F5C6C2;}
+.btn-danger:hover{background:#FAE0DE;}
+.btn-sm{padding:5px 10px;font-size:12px;}
+.btn-lg{padding:11px 24px;font-size:15px;font-weight:600;}
+.table-wrap{overflow-x:auto;}
+table{width:100%;border-collapse:collapse;font-size:13px;}
+thead th{font-size:11px;font-weight:600;color:var(--text-3);text-transform:uppercase;letter-spacing:0.06em;padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);white-space:nowrap;}
+tbody tr{border-bottom:1px solid var(--border);transition:background 0.08s;}
+tbody tr:hover{background:var(--bg);}
+tbody tr:last-child{border-bottom:none;}
+tbody td{padding:11px 14px;color:var(--text);vertical-align:middle;}
+.badge{display:inline-flex;align-items:center;font-size:11px;font-weight:500;padding:2px 8px;border-radius:999px;white-space:nowrap;}
+.badge-warn{background:var(--warn-light);color:var(--warn);}
+.badge-danger{background:var(--danger-light);color:var(--danger);}
+.badge-success{background:var(--success-light);color:var(--success);}
+.badge-info{background:var(--blue-light);color:var(--blue);}
+.sku-chip{font-family:var(--mono);font-size:12px;background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--text-2);}
+.items-table{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:8px;}
+.items-table table{margin:0;}
+.items-table thead th{background:var(--bg);}
+.items-table tbody td{padding:8px 12px;}
+.items-table input,.items-table select{font-family:var(--font);font-size:13px;color:var(--text);background:transparent;border:none;outline:none;width:100%;padding:2px 0;}
+.items-table input:focus,.items-table select:focus{background:var(--blue-light);border-radius:4px;padding:2px 6px;}
+.toast{position:fixed;bottom:24px;right:24px;z-index:999;background:var(--text);color:white;padding:12px 20px;border-radius:var(--radius-lg);font-size:14px;font-weight:500;box-shadow:0 8px 24px rgba(0,0,0,0.15);animation:slideUp 0.2s ease;}
+@keyframes slideUp{from{transform:translateY(12px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.section-sep{border:none;border-top:1px solid var(--border);margin:24px 0;}
+.fallas-section{border:1px solid #F5C6C2;border-radius:var(--radius-lg);overflow:hidden;}
+.fallas-header{background:var(--danger-light);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;}
+.fallas-header span{font-size:12px;font-weight:600;color:var(--danger);text-transform:uppercase;letter-spacing:0.06em;}
+.fallas-body{padding:12px;}
+.falla-row{display:grid;grid-template-columns:1.2fr 1fr 2fr auto;gap:8px;align-items:start;padding:8px 0;border-bottom:1px solid var(--border);}
+.falla-row:last-child{border-bottom:none;}
+.empty{text-align:center;padding:48px 24px;color:var(--text-3);}
+.empty-icon{font-size:32px;margin-bottom:12px;}
+.empty p{font-size:14px;}
+.scanner-hint{background:var(--blue-light);border:1px solid #BDD0F5;border-radius:var(--radius);padding:10px 16px;margin-bottom:24px;font-size:13px;color:var(--blue);display:flex;align-items:center;gap:8px;}
+.taller-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-lg);padding:14px 16px;cursor:pointer;transition:all 0.12s;}
+.taller-card.active{background:var(--blue-light);border-color:#BDD0F5;}
+.taller-card-name{font-size:14px;font-weight:600;margin-bottom:8px;}
+.taller-card-stats{display:flex;gap:16px;}
+.taller-card-stats .num{font-size:22px;font-weight:600;}
+.taller-card-stats .lbl{font-size:11px;color:var(--text-3);}
+@media (max-width: 900px){
+  .metrics{grid-template-columns:repeat(2,1fr);}
+  .form-grid.cols3{grid-template-columns:1fr 1fr;}
+}
+</style>
+</head>
+<body>
+
+<div id="role-modal" style="position:fixed;inset:0;background:rgba(10,10,10,0.6);z-index:1000;display:flex;align-items:center;justify-content:center;">
+  <div style="background:#fff;border-radius:12px;padding:32px;max-width:380px;width:90%;text-align:center;box-shadow:0 12px 32px rgba(0,0,0,0.2);">
+    <div style="width:48px;height:48px;background:var(--accent);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:22px;margin:0 auto 16px;">M</div>
+    <h2 style="font-size:18px;font-weight:600;margin-bottom:6px;">Iniciar sesión</h2>
+    <p style="font-size:13px;color:var(--text-2);margin-bottom:20px;">Elegí tu usuario e ingresá la contraseña.</p>
+    <div class="field" style="text-align:left;margin-bottom:12px;">
+      <label>Usuario</label>
+      <select id="login-usuario"></select>
+    </div>
+    <div class="field" style="text-align:left;margin-bottom:8px;">
+      <label>Contraseña</label>
+      <input type="password" id="login-password" placeholder="Contraseña" onkeydown="if(event.key==='Enter') intentarLogin();">
+    </div>
+    <div id="login-error" style="color:var(--danger);font-size:12px;min-height:18px;margin-bottom:8px;"></div>
+    <button class="btn btn-primary btn-lg" style="width:100%;" onclick="intentarLogin()">Ingresar</button>
+  </div>
+</div>
+
+<div class="topbar">
+  <div class="topbar-brand">
+    <div class="topbar-logo">M</div>
+    <div class="topbar-title">MKF APP</div>
+    <div class="topbar-sub">Control de inventario — Monky Force</div>
+  </div>
+  <div class="topbar-data">
+    <span id="role-badge" style="color:#9E9C97;font-size:12px;"></span>
+    <button onclick="cambiarUsuario()">Cambiar usuario</button>
+    <button onclick="exportarDatos()">Exportar datos</button>
+    <button onclick="document.getElementById('importFile').click()">Importar datos</button>
+    <input type="file" id="importFile" accept=".json" style="display:none" onchange="importarDatos(event)">
+  </div>
+</div>
+
+<div class="app-shell">
+  <aside class="sidebar">
+    <nav class="sidebar-nav">
+      <button class="nav-item active" data-page="ingreso" onclick="showPage('ingreso')"><span class="nav-icon">[+]</span>Nuevo ingreso</button>
+      <button class="nav-item" data-page="historial" onclick="showPage('historial')"><span class="nav-icon">[H]</span>Historial</button>
+      <button class="nav-item" data-page="estampas" onclick="showPage('estampas')"><span class="nav-icon">[E]</span>Estampas</button>
+      <button class="nav-item" data-page="produccion" onclick="showPage('produccion')"><span class="nav-icon">[P]</span>En producción</button>
+      <button class="nav-item" data-page="stock" onclick="showPage('stock')"><span class="nav-icon">[S]</span>Stock</button>
+      <button class="nav-item" data-page="reportes" onclick="showPage('reportes')"><span class="nav-icon">[R]</span>Reportes</button>
+      <button class="nav-item" data-page="catalogo" onclick="showPage('catalogo')"><span class="nav-icon">[C]</span>Catálogo SKU</button>
+      <button class="nav-item" data-page="config" onclick="showPage('config')"><span class="nav-icon">[*]</span>Configuración</button>
+    </nav>
+    <div class="sidebar-foot">MKF APP v1.0 — Local<br>Datos guardados en este navegador</div>
+  </aside>
+
+  <main class="main-content">
+
+    <section class="page active" id="page-ingreso">
+      <div class="page-header"><h1>Nuevo ingreso</h1><p>Registrá las prendas recibidas. El escáner de código de barras funciona en cualquier momento (apuntá y disparará automáticamente).</p></div>
+      <div class="scanner-hint"><span>Escáner activo — apuntá a cualquier código de barras para agregar prendas automáticamente</span></div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <p class="card-title">Datos del ingreso</p>
+          <div class="form-grid cols3">
+            <div class="field"><label>Fecha</label><input type="date" id="ing-fecha"></div>
+            <div class="field"><label>N° de remito</label><input id="ing-remito" placeholder="Ej: REM-0042"></div>
+            <div class="field"><label>Operario responsable *</label>
+              <div style="display:flex;gap:6px;">
+                <select id="ing-operario" style="flex:1;"><option value="">Seleccionar...</option></select>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="agregarOperario()" title="Agregar operario">+</button>
+              </div>
+            </div>
+            <div class="field" style="grid-column:1 / -1;"><label>Taller de confección</label>
+              <div style="display:flex;gap:6px;">
+                <select id="ing-taller" style="flex:1;"><option value="">Sin especificar</option></select>
+                <button type="button" class="btn btn-secondary btn-sm" onclick="agregarTallerConfeccion()" title="Agregar taller">+</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <p class="card-title">Carga rápida por talles (S a XXL)</p>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:12px;">Elegí un producto y un color (de los configurados) y se agrega automáticamente una fila por cada talle de S a XXL para que solo completes las cantidades.</p>
+          <div class="form-grid cols3">
+            <div class="field"><label>Producto</label><select id="quick-producto"></select></div>
+            <div class="field"><label>Color</label><select id="quick-color"></select></div>
+            <div class="field" style="display:flex;align-items:flex-end;"><button class="btn btn-primary" style="width:100%;" onclick="generarFilasPorTalle()">+ Agregar talles S a XXL</button></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:16px;">
+        <div class="card-body">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <p class="card-title" style="margin-bottom:0;">Prendas recibidas</p>
+            <span style="font-size:13px;color:var(--text-2);font-weight:500;">Total: <strong id="ing-total">0</strong> prendas</span>
+          </div>
+          <div class="items-table">
+            <table>
+              <thead><tr><th style="width:150px;">SKU</th><th>Producto recibido</th><th style="width:90px;">Talle</th><th style="width:90px;">Color</th><th style="width:70px;">Cant.</th><th style="width:90px;">Falla (cant.)</th><th style="width:36px;"></th></tr></thead>
+              <tbody id="ing-items"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="addIngresoItem()">+ Agregar fila</button>
+          <div id="ing-stock-info" style="margin-top:12px;"></div>
+        </div>
+      </div>
+
+      <div id="ing-fallas-wrap"></div>
+
+      <div class="card" style="margin-bottom:24px;">
+        <div class="card-body">
+          <div class="field"><label>Observaciones generales</label><textarea id="ing-obs" placeholder="Alguna nota adicional..."></textarea></div>
+        </div>
+      </div>
+      <button class="btn btn-primary btn-lg" style="width:100%;" onclick="guardarIngreso()">Guardar ingreso</button>
+    </section>
+
+    <section class="page" id="page-historial">
+      <div class="page-header"><h1>Historial de ingresos</h1><p>Consultá todos los ingresos registrados</p></div>
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body" style="display:flex;gap:12px;align-items:flex-end;">
+          <div class="field" style="flex:1;"><label>Desde</label><input type="date" id="hist-desde"></div>
+          <div class="field" style="flex:1;"><label>Hasta</label><input type="date" id="hist-hasta"></div>
+          <button class="btn btn-primary" onclick="renderHistorial()">Filtrar</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('hist-desde').value='';document.getElementById('hist-hasta').value='';renderHistorial();">Limpiar</button>
+        </div>
+      </div>
+      <div id="historial-grid" style="display:grid;grid-template-columns:1fr;gap:16px;">
+        <div class="card"><div class="card-body" style="padding:0;"><div class="table-wrap"><table>
+          <thead><tr><th>Fecha y hora</th><th>Remito</th><th>Operario</th><th>Taller</th><th>Prendas</th><th>Fallas</th></tr></thead>
+          <tbody id="historial-tbody"></tbody>
+        </table></div></div></div>
+        <div class="card" id="historial-detail-card" style="display:none;"><div class="card-body" id="historial-detail"></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-estampas">
+      <div class="page-header"><h1>Estampas</h1><p>Gestioná los traspasos de prendas a los talleres de estampado — Aixa y Fernando</p></div>
+      <div class="metrics cols3" id="estampas-metrics"></div>
+      <div style="display:flex;gap:8px;margin-bottom:20px;">
+        <button class="btn btn-primary" id="est-tab-lista" onclick="setEstampaTab('lista')">Ver estampas</button>
+        <button class="btn btn-secondary" id="est-tab-nuevo" onclick="setEstampaTab('nuevo')">+ Nueva prenda para mandar a estampar</button>
+      </div>
+      <div id="est-form-wrap" style="display:none;"></div>
+      <div id="est-lista-wrap"></div>
+    </section>
+
+    <section class="page" id="page-produccion">
+      <div class="page-header"><h1>En producción</h1><p>Seguimiento de cortes y órdenes de producción por taller de confección</p></div>
+      <div style="margin-bottom:12px;"><button class="btn btn-secondary btn-sm" onclick="agregarTallerConfeccionProd()">+ Agregar taller de confección</button></div>
+      <div id="prod-talleres-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:24px;"></div>
+      <div id="prod-panel"></div>
+    </section>
+
+    <section class="page" id="page-stock">
+      <div class="page-header"><h1>Stock actual</h1><p>Total acumulado de prendas ingresadas por SKU</p></div>
+      <div class="metrics cols3" id="stock-metrics"></div>
+      <div class="card">
+        <div class="card-body" style="padding-bottom:12px;"><input type="search" id="stock-search" placeholder="Buscar por SKU o descripción..." oninput="renderStock()"></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>SKU</th><th>Descripción</th><th>Talle</th><th>Color</th><th>Total ingresado</th><th>Disponible</th><th>Con falla</th><th>% falla</th><th>Último ingreso</th></tr></thead>
+          <tbody id="stock-tbody"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-reportes">
+      <div class="page-header"><h1>Reportes</h1><p>Estadísticas generales de MKF APP</p></div>
+      <div class="metrics cols3" id="reportes-metrics" style="grid-template-columns:repeat(3,1fr);"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <div class="card"><div class="card-body"><p class="card-title">Fallas por tipo</p><div id="reportes-tipo"></div></div></div>
+        <div class="card"><div class="card-body"><p class="card-title">Fallas por taller</p><div id="reportes-taller"></div></div></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-catalogo">
+      <div class="page-header"><h1>Catálogo SKU</h1><p>Administrá los artículos. Al escanear un código conocido se autocompleta automáticamente.</p></div>
+
+      <datalist id="productos-list"></datalist>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Agregar / actualizar artículo</p>
+          <div class="form-grid cols3">
+            <div class="field"><label>SKU *</label><input class="sku-input" id="cat-sku" placeholder="Ej: REM-001-M-AZU"></div>
+            <div class="field" style="grid-column:span 2;"><label>Descripción *</label><input id="cat-desc" placeholder="Ej: Remera básica manga corta"></div>
+            <div class="field"><label>Talle</label><input id="cat-talle" placeholder="M, L, XL..."></div>
+            <div class="field"><label>Color</label><input id="cat-color" placeholder="Azul, Negro..."></div>
+            <div class="field"><label>Categoría</label><input id="cat-categoria" placeholder="Remeras, Camperas..."></div>
+          </div>
+          <div style="margin-top:16px;"><button class="btn btn-primary" onclick="guardarCatalogo()">+ Guardar artículo</button></div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-body" style="padding-bottom:0;"><input type="search" id="cat-search" placeholder="Buscar en catálogo..." oninput="renderCatalogo()" style="margin-bottom:16px;"></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th>SKU</th><th>Descripción</th><th>Talle</th><th>Color</th><th>Categoría</th><th></th></tr></thead>
+          <tbody id="cat-tbody"></tbody>
+        </table></div>
+      </div>
+    </section>
+
+    <section class="page" id="page-config">
+      <div class="page-header"><h1>Configuración</h1><p>Administrá las listas que se usan en toda la app: productos, colores, talles, operarios y talleres. Tocá una opción para agregar/quitar en vez de escribirla cada vez.</p></div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Productos</p>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:12px;">Nombres de productos (ej: TACTIC SHIRT, FORCE SHIRT) para usar al cargar ingresos y cortes de producción.</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input id="prod-nuevo-nombre" placeholder="Ej: TACTIC SHIRT" style="flex:1;">
+            <button class="btn btn-primary" onclick="guardarProductoNuevo()">+ Agregar producto</button>
+          </div>
+          <div id="productos-listado" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Colores</p>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:12px;">Colores disponibles para elegir (sin tener que escribirlos) en ingresos, cortes de producción y estampas.</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input id="color-nuevo-nombre" placeholder="Ej: Azul Marino" style="flex:1;">
+            <button class="btn btn-primary" onclick="guardarColorNuevo()">+ Agregar color</button>
+          </div>
+          <div id="colores-listado" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Talles</p>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:12px;">Lista de talles disponibles en los desplegables.</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input id="talle-nuevo-nombre" placeholder="Ej: 48" style="flex:1;">
+            <button class="btn btn-primary" onclick="guardarTalleNuevo()">+ Agregar talle</button>
+          </div>
+          <div id="talles-listado" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Operarios</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input id="op-nuevo-nombre" placeholder="Nombre del operario" style="flex:1;">
+            <button class="btn btn-primary" onclick="guardarOperarioNuevo()">+ Agregar operario</button>
+          </div>
+          <div id="operarios-listado" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Talleres de confección</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input id="tc-nuevo-nombre" placeholder="Nombre del taller" style="flex:1;">
+            <button class="btn btn-primary" onclick="guardarTallerConfeccionNuevo()">+ Agregar taller</button>
+          </div>
+          <div id="talleres-confeccion-listado" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Talleres de estampa</p>
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <input id="te-nuevo-nombre" placeholder="Nombre del taller" style="flex:1;">
+            <button class="btn btn-primary" onclick="guardarTallerEstampaNuevo()">+ Agregar taller</button>
+          </div>
+          <div id="talleres-estampa-listado" style="display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:20px;">
+        <div class="card-body">
+          <p class="card-title">Usuarios y contraseñas</p>
+          <p style="font-size:13px;color:var(--text-2);margin-bottom:12px;">El sistema tiene 3 usuarios: <strong>SALA DE CORTE</strong>, <strong>DEPOSITO</strong> y <strong>ADMINISTRADOR</strong>. DEPOSITO y ADMINISTRADOR ven todas las secciones. SALA DE CORTE tiene una vista simplificada — tildá abajo qué secciones puede ver. Cada uno elige su usuario e ingresa su contraseña al abrir la app, o tocando "Cambiar usuario" arriba a la derecha.</p>
+          <div id="permisos-operario-listado" style="display:flex;flex-direction:column;gap:8px;"></div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+const STORAGE_KEY = 'mkf_app_data_v1';
+const TALLES_DEFAULT = ['XS','S','M','L','XL','XXL','XXXL','36','38','40','42','44','46','Único'];
+const COLORES_DEFAULT = ['Negro','Blanco','Azul','Azul Marino','Rojo','Gris','Gris Melange','Verde','Amarillo','Naranja','Bordo','Beige'];
+const TIPOS_FALLA = ['Descocida','Manchada','Rota','Mal terminada','Color incorrecto','Talle incorrecto','Otra'];
+const OPERARIOS_DEFAULT = ['Gonzalo Albarracin','Nahuel Sam Sam'];
+const TALLERES_CONFECCION_DEFAULT = ['Percy','Marisa','Jacinto','Jaime','Ivana','Yanet','Mario','Alberto'];
+const TALLERES_ESTAMPA_DEFAULT = ['Aixa','Fernando'];
+
+const PERMISOS_OPERARIO_DEFAULT = ['ingreso','historial'];
+const USUARIOS_DEFAULT = [
+  {nombre:'SALA DE CORTE', password:'saladecorte1', tipo:'limitado'},
+  {nombre:'DEPOSITO', password:'deposito1', tipo:'admin'},
+  {nombre:'ADMINISTRADOR', password:'administrador1', tipo:'admin'}
+];
+const PAGINAS = [
+  {key:'ingreso', label:'Nuevo ingreso'},
+  {key:'historial', label:'Historial'},
+  {key:'estampas', label:'Estampas'},
+  {key:'produccion', label:'En producción'},
+  {key:'stock', label:'Stock'},
+  {key:'reportes', label:'Reportes'},
+  {key:'catalogo', label:'Catálogo SKU'},
+  {key:'config', label:'Configuración'}
+];
+
+function defaultData(){
+  return {
+    operarios: OPERARIOS_DEFAULT.slice(),
+    talleresConfeccion: TALLERES_CONFECCION_DEFAULT.slice(),
+    talleresEstampa: TALLERES_ESTAMPA_DEFAULT.slice(),
+    catalogo: [],
+    productos: [],
+    colores: COLORES_DEFAULT.slice(),
+    talles: TALLES_DEFAULT.slice(),
+    permisosOperario: PERMISOS_OPERARIO_DEFAULT.slice(),
+    usuarios: USUARIOS_DEFAULT.map(function(u){return Object.assign({},u);}),
+    ingresos: [],
+    estampas: [],
+    producciones: [],
+    nextId: 1
+  };
+}
+function getTalles(){ return (DB.talles && DB.talles.length) ? DB.talles : TALLES_DEFAULT; }
+
+let DB = loadData();
+
+function loadData(){
+  try{
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(!raw) return defaultData();
+    const d = JSON.parse(raw);
+    const def = defaultData();
+    return Object.assign(def, d);
+  }catch(e){ return defaultData(); }
+}
+function saveData(){ localStorage.setItem(STORAGE_KEY, JSON.stringify(DB)); }
+function nextId(){ const id = DB.nextId; DB.nextId++; return id; }
+
+function showPage(name){
+  document.querySelectorAll('.page').forEach(function(p){p.classList.remove('active');});
+  document.querySelectorAll('.nav-item').forEach(function(n){n.classList.remove('active');});
+  document.getElementById('page-'+name).classList.add('active');
+  document.querySelector('.nav-item[data-page="'+name+'"]').classList.add('active');
+  if(name==='historial') renderHistorial();
+  if(name==='estampas') renderEstampas();
+  if(name==='produccion') renderProduccion();
+  if(name==='stock') renderStock();
+  if(name==='reportes') renderReportes();
+  if(name==='catalogo') renderCatalogo();
+  if(name==='config') renderConfig();
+}
+
+function toast(msg){
+  const el = document.createElement('div');
+  el.className='toast'; el.textContent=msg;
+  document.body.appendChild(el);
+  setTimeout(function(){el.remove();},3500);
+}
+
+function exportarDatos(){
+  const blob = new Blob([JSON.stringify(DB,null,2)],{type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href=url; a.download='mkf-app-backup-'+new Date().toISOString().slice(0,10)+'.json';
+  a.click(); URL.revokeObjectURL(url);
+  toast('Backup descargado');
+}
+function importarDatos(ev){
+  const file = ev.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const d = JSON.parse(e.target.result);
+      DB = Object.assign(defaultData(), d);
+      saveData();
+      toast('Datos importados correctamente');
+      location.reload();
+    }catch(err){ alert('Error al leer el archivo. Verificá que sea un backup válido de MKF APP.'); }
+  };
+  reader.readAsText(file);
+}
+
+let ingresoItems = [];
+let ingresoFallas = [];
+let tmpCounter = 0;
+function tmpId(){ tmpCounter++; return 'tmp_'+tmpCounter; }
+
+function emptyItem(){ return {_tmpId:tmpId(), sku:'',descripcion:'',talle:'M',color:'',cantidad:1,tieneFalla:false,cantidadFalla:0}; }
+function emptyFalla(){ return {_id:tmpId(), itemTmpId:'', sku:'', tipo:'', descripcion:''}; }
+
+function agregarProducto(nombreSugerido){
+  const nombre = prompt('Nombre del nuevo producto:', nombreSugerido||'');
+  if(!nombre || !nombre.trim()) return null;
+  const n = nombre.trim();
+  if(DB.productos.some(function(p){return p.toLowerCase()===n.toLowerCase();})){
+    toast('Ese producto ya existe');
+    return n;
+  }
+  DB.productos.push(n);
+  saveData();
+  toast('Producto agregado');
+  return n;
+}
+function eliminarProducto(nombre){
+  if(!confirm('¿Eliminar el producto "'+nombre+'" de la lista? (no afecta ingresos ya cargados)')) return;
+  DB.productos = DB.productos.filter(function(p){return p!==nombre;});
+  saveData();
+  renderProductos();
+}
+function refreshProductosDatalist(){
+  const dl = document.getElementById('productos-list');
+  if(dl) dl.innerHTML = DB.productos.map(function(p){return '<option value="'+esc(p)+'">';}).join('');
+}
+
+function colorOptionsHtml(current){
+  let html = '<option value="">-</option>';
+  DB.colores.forEach(function(c){
+    html += '<option '+(c===current?'selected':'')+'>'+esc(c)+'</option>';
+  });
+  if(current && DB.colores.indexOf(current)===-1){
+    html += '<option selected>'+esc(current)+'</option>';
+  }
+  html += '<option value="__nuevo__">+ Nuevo color...</option>';
+  return html;
+}
+function agregarColorPrompt(){
+  const nombre = prompt('Nombre del nuevo color:');
+  if(!nombre || !nombre.trim()) return null;
+  const n = nombre.trim();
+  if(!DB.colores.some(function(c){return c.toLowerCase()===n.toLowerCase();})){
+    DB.colores.push(n); saveData();
+  }
+  return n;
+}
+function onColorChangeIngreso(idx, sel){
+  if(sel.value==='__nuevo__'){
+    const c = agregarColorPrompt();
+    if(c){ ingresoItems[idx].color=c; renderIngresoItems(); }
+    else{ sel.value = ingresoItems[idx].color; }
+  }else{
+    ingresoItems[idx].color = sel.value;
+  }
+}
+function onColorChangeProd(idx, sel){
+  if(sel.value==='__nuevo__'){
+    const c = agregarColorPrompt();
+    if(c){ prodDesglose[idx].color=c; renderProdDesgloseRows(); }
+    else{ sel.value = prodDesglose[idx].color; }
+  }else{
+    prodDesglose[idx].color = sel.value;
+  }
+}
+function onColorChangeEstampaManual(sel){
+  if(sel.value==='__nuevo__'){
+    const c = agregarColorPrompt();
+    if(c){ sel.innerHTML = colorOptionsHtml(c); }
+    else{ sel.value=''; }
+  }
+}
+
+function agregarOperario(){
+  const nombre = prompt('Nombre del nuevo operario:');
+  if(!nombre || !nombre.trim()) return;
+  const n = nombre.trim();
+  if(DB.operarios.some(function(o){return o.toLowerCase()===n.toLowerCase();})){
+    toast('Ese operario ya existe');
+    return;
+  }
+  DB.operarios.push(n);
+  saveData();
+  const opSel = document.getElementById('ing-operario');
+  opSel.innerHTML = '<option value="">Seleccionar...</option>' + DB.operarios.map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('');
+  opSel.value = n;
+  toast('Operario agregado');
+}
+function agregarTallerConfeccion(){
+  const nombre = prompt('Nombre del nuevo taller de confección:');
+  if(!nombre || !nombre.trim()) return;
+  const n = nombre.trim();
+  if(DB.talleresConfeccion.some(function(t){return t.toLowerCase()===n.toLowerCase();})){
+    toast('Ese taller ya existe');
+    return;
+  }
+  DB.talleresConfeccion.push(n);
+  saveData();
+  const tSel = document.getElementById('ing-taller');
+  tSel.innerHTML = '<option value="">Sin especificar</option>' + DB.talleresConfeccion.map(function(t){return '<option value="'+esc(t)+'">'+esc(t)+'</option>';}).join('');
+  tSel.value = n;
+  toast('Taller agregado');
+}
+function agregarTallerEstampa(){
+  const nombre = prompt('Nombre del nuevo taller de estampa:');
+  if(!nombre || !nombre.trim()) return;
+  const n = nombre.trim();
+  if(DB.talleresEstampa.some(function(t){return t.toLowerCase()===n.toLowerCase();})){
+    toast('Ese taller ya existe');
+    return;
+  }
+  DB.talleresEstampa.push(n);
+  saveData();
+  const sel = document.getElementById('est-taller');
+  if(sel){
+    sel.innerHTML = '<option value="">Seleccionar taller...</option>' + DB.talleresEstampa.map(function(t){return '<option>'+esc(t)+'</option>';}).join('');
+    sel.value = n;
+  }
+  toast('Taller de estampa agregado');
+}
+
+function initIngresoForm(){
+  document.getElementById('ing-fecha').value = new Date().toISOString().slice(0,10);
+  const opSel = document.getElementById('ing-operario');
+  opSel.innerHTML = '<option value="">Seleccionar...</option>' + DB.operarios.map(function(o){return '<option value="'+esc(o)+'">'+esc(o)+'</option>';}).join('');
+  const tSel = document.getElementById('ing-taller');
+  tSel.innerHTML = '<option value="">Sin especificar</option>' + DB.talleresConfeccion.map(function(t){return '<option value="'+esc(t)+'">'+esc(t)+'</option>';}).join('');
+  ingresoItems = [emptyItem()];
+  ingresoFallas = [];
+  refreshProductosDatalist();
+  refreshQuickIngresoSelects();
+  renderIngresoItems();
+  renderIngresoFallas();
+}
+
+function renderIngresoItems(){
+  const tbody = document.getElementById('ing-items');
+  tbody.innerHTML = ingresoItems.map(function(item,idx){
+    return '<tr>'+
+      '<td><input data-skufield="1" class="sku-input" value="'+esc(item.sku)+'" oninput="updIngItem('+idx+',\'sku\',this.value)" onblur="onSkuBlurIngreso('+idx+',this.value)" placeholder="Escanear o escribir"></td>'+
+      '<td><select onchange="onProductoChangeIngreso('+idx+',this)">'+productoOptionsHtml(item.descripcion)+'</select></td>'+
+      '<td><select onchange="updIngItem('+idx+',\'talle\',this.value)">'+getTalles().map(function(t){return '<option '+(t===item.talle?'selected':'')+'>'+t+'</option>';}).join('')+'</select></td>'+
+      '<td><select onchange="onColorChangeIngreso('+idx+',this)">'+colorOptionsHtml(item.color)+'</select></td>'+
+      '<td><input type="number" min="0" value="'+item.cantidad+'" oninput="updIngItem('+idx+',\'cantidad\',parseInt(this.value)||0)" style="text-align:center;"></td>'+
+      '<td style="text-align:center;"><div style="display:flex;align-items:center;gap:4px;justify-content:center;"><input type="checkbox" '+(item.tieneFalla?'checked':'')+' onchange="toggleFallaItem('+idx+',this.checked)">'+
+      (item.tieneFalla?('<input type="number" min="1" max="'+item.cantidad+'" value="'+item.cantidadFalla+'" oninput="updIngItem('+idx+',\'cantidadFalla\',parseInt(this.value)||0)" style="width:48px;text-align:center;" title="Cantidad con falla">'):'')+
+      '</div></td>'+
+      '<td><button class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="removeIngItem('+idx+')">x</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('ing-total').textContent = ingresoItems.reduce(function(s,i){return s+(parseInt(i.cantidad)||0);},0);
+}
+
+function updIngItem(idx,field,val){
+  ingresoItems[idx][field]=val;
+  if(field==='cantidadFalla'){
+    const max = parseInt(ingresoItems[idx].cantidad)||0;
+    let v = parseInt(val)||0;
+    if(v<1) v=1;
+    if(max>0 && v>max) v=max;
+    ingresoItems[idx].cantidadFalla = v;
+  }
+  if(field==='cantidad'){
+    const cant = parseInt(val)||0;
+    if(ingresoItems[idx].cantidadFalla>cant) ingresoItems[idx].cantidadFalla = cant>0?cant:0;
+  }
+  if(field==='cantidad'||field==='sku') document.getElementById('ing-total').textContent = ingresoItems.reduce(function(s,i){return s+(parseInt(i.cantidad)||0);},0);
+}
+function addIngresoItem(){ ingresoItems.push(emptyItem()); renderIngresoItems(); }
+function removeIngItem(idx){
+  const item = ingresoItems[idx];
+  ingresoItems.splice(idx,1);
+  ingresoFallas = ingresoFallas.filter(function(f){return f.itemTmpId!==item._tmpId;});
+  if(ingresoItems.length===0) ingresoItems=[emptyItem()];
+  renderIngresoItems(); renderIngresoFallas();
+}
+function toggleFallaItem(idx,checked){
+  ingresoItems[idx].tieneFalla = checked;
+  if(checked){
+    if(!ingresoItems[idx].cantidadFalla || ingresoItems[idx].cantidadFalla<1){
+      ingresoItems[idx].cantidadFalla = 1;
+    }
+    const f = emptyFalla();
+    f.itemTmpId = ingresoItems[idx]._tmpId;
+    f.sku = ingresoItems[idx].sku;
+    ingresoFallas.push(f);
+  }else{
+    ingresoItems[idx].cantidadFalla = 0;
+    ingresoFallas = ingresoFallas.filter(function(f){return f.itemTmpId!==ingresoItems[idx]._tmpId;});
+  }
+  renderIngresoItems();
+  renderIngresoFallas();
+}
+function productoOptionsHtml(current){
+  let html = '<option value="">- Producto -</option>';
+  DB.productos.forEach(function(p){
+    html += '<option '+(p===current?'selected':'')+'>'+esc(p)+'</option>';
+  });
+  if(current && DB.productos.indexOf(current)===-1){
+    html += '<option selected>'+esc(current)+'</option>';
+  }
+  html += '<option value="__nuevo__">+ Nuevo producto...</option>';
+  return html;
+}
+function onProductoChangeIngreso(idx, sel){
+  if(sel.value==='__nuevo__'){
+    const p = agregarProducto();
+    if(p){
+      ingresoItems[idx].descripcion = p;
+      renderIngresoItems();
+      onDescBlurIngreso(idx, p);
+    }else{
+      sel.value = ingresoItems[idx].descripcion;
+    }
+  }else{
+    ingresoItems[idx].descripcion = sel.value;
+    onDescBlurIngreso(idx, sel.value);
+  }
+}
+
+const RANGO_TALLES_S_XXL = ['S','M','L','XL','XXL'];
+function refreshQuickIngresoSelects(){
+  const pSel = document.getElementById('quick-producto');
+  const cSel = document.getElementById('quick-color');
+  if(pSel) pSel.innerHTML = productoOptionsHtml('');
+  if(cSel) cSel.innerHTML = colorOptionsHtml('');
+}
+function generarFilasPorTalle(){
+  const pSel = document.getElementById('quick-producto');
+  const cSel = document.getElementById('quick-color');
+
+  if(pSel.value==='__nuevo__'){
+    const p = agregarProducto();
+    if(!p){ pSel.value=''; return; }
+    pSel.innerHTML = productoOptionsHtml(p);
+  }
+  if(cSel.value==='__nuevo__'){
+    const c = agregarColorPrompt();
+    if(!c){ cSel.value=''; }
+    else{ cSel.innerHTML = colorOptionsHtml(c); }
+  }
+
+  const producto = pSel.value;
+  const color = cSel.value;
+  if(!producto){ alert('Elegí un producto'); return; }
+
+  const talles = getTalles().filter(function(t){return RANGO_TALLES_S_XXL.indexOf(t)!==-1;});
+  const talleOrder = RANGO_TALLES_S_XXL.filter(function(t){return talles.indexOf(t)!==-1;});
+
+  // Quitamos filas vacías sin usar antes de agregar las nuevas
+  ingresoItems = ingresoItems.filter(function(i){return i.sku || i.descripcion;});
+
+  talleOrder.forEach(function(t){
+    const item = emptyItem();
+    item.descripcion = producto;
+    item.talle = t;
+    item.color = color;
+    item.cantidad = 0;
+    ingresoItems.push(item);
+  });
+  if(ingresoItems.length===0) ingresoItems=[emptyItem()];
+  renderIngresoItems();
+  toast('Se agregaron '+talleOrder.length+' filas para '+producto+(color?(' / '+color):''));
+}
+
+function onDescBlurIngreso(idx,desc){
+  const info = document.getElementById('ing-stock-info');
+  if(!desc){ info.innerHTML=''; return; }
+  const stock = getStock().filter(function(s){return (s.descripcion||'').toLowerCase()===desc.toLowerCase();});
+  if(stock.length===0){ info.innerHTML=''; return; }
+  const totalGeneral = stock.reduce(function(s,i){return s+i.total;},0);
+  const badges = stock.map(function(s){
+    return '<span class="badge badge-info" style="margin:2px;">'+esc(s.talle||'-')+(s.color?(' / '+esc(s.color)):'')+': '+s.total+'</span>';
+  }).join(' ');
+  info.innerHTML = '<div style="background:var(--blue-light);border:1px solid #BDD0F5;border-radius:var(--radius);padding:10px 14px;font-size:13px;">'+
+    '<strong>'+esc(desc)+'</strong> — Stock actual ('+totalGeneral+' en total): '+badges+'</div>';
+}
+function onSkuBlurIngreso(idx,sku){
+  if(!sku) return;
+  const prod = DB.catalogo.find(function(c){return c.sku.toLowerCase()===sku.toLowerCase();});
+  if(prod){
+    ingresoItems[idx].descripcion = prod.descripcion;
+    ingresoItems[idx].talle = prod.talle || ingresoItems[idx].talle;
+    ingresoItems[idx].color = prod.color || ingresoItems[idx].color;
+    renderIngresoItems();
+  }
+}
+
+function renderIngresoFallas(){
+  const wrap = document.getElementById('ing-fallas-wrap');
+  if(ingresoFallas.length===0){ wrap.innerHTML=''; return; }
+  let html = '<div class="fallas-section" style="margin-bottom:16px;">'+
+    '<div class="fallas-header"><span>Detalle de fallas - '+ingresoFallas.length+' registrada'+(ingresoFallas.length>1?'s':'')+'</span>'+
+    '<button class="btn btn-sm" style="font-size:11px;" onclick="ingresoFallas.push(emptyFalla());renderIngresoFallas();">+ Agregar falla</button></div>'+
+    '<div class="fallas-body">';
+  ingresoFallas.forEach(function(f){
+    html += '<div class="falla-row">'+
+      '<input style="border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-family:var(--mono);font-size:12px;" value="'+esc(f.sku)+'" oninput="updFalla(\''+f._id+'\',\'sku\',this.value)" placeholder="SKU">'+
+      '<select style="border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:13px;" onchange="updFalla(\''+f._id+'\',\'tipo\',this.value)"><option value="">Tipo...</option>'+
+      TIPOS_FALLA.map(function(t){return '<option '+(t===f.tipo?'selected':'')+'>'+t+'</option>';}).join('')+'</select>'+
+      '<textarea rows="2" style="border:1px solid var(--border);border-radius:var(--radius);padding:6px 10px;font-size:13px;resize:vertical;" oninput="updFalla(\''+f._id+'\',\'descripcion\',this.value)" placeholder="Describí el defecto...">'+esc(f.descripcion)+'</textarea>'+
+      '<button class="btn btn-danger btn-sm" onclick="ingresoFallas=ingresoFallas.filter(function(x){return x._id!==\''+f._id+'\';});renderIngresoFallas();">x</button>'+
+    '</div>';
+  });
+  html += '</div></div>';
+  wrap.innerHTML = html;
+}
+function updFalla(id,field,val){
+  const f = ingresoFallas.find(function(x){return x._id===id;});
+  if(f) f[field]=val;
+}
+
+function guardarIngreso(){
+  const operario = document.getElementById('ing-operario').value;
+  const taller = document.getElementById('ing-taller').value;
+  const fecha = document.getElementById('ing-fecha').value;
+  const nroRemito = document.getElementById('ing-remito').value;
+  const obs = document.getElementById('ing-obs').value;
+
+  if(!operario){ alert('Seleccioná un operario'); return; }
+  const itemsValidos = ingresoItems.filter(function(i){return i.sku || i.descripcion;});
+  if(itemsValidos.length===0){ alert('Agregá al menos una prenda'); return; }
+
+  const ingreso = {
+    id: nextId(),
+    fecha: fecha, nroRemito: nroRemito, operario: operario, taller: taller,
+    observaciones: obs,
+    createdAt: new Date().toISOString(),
+    items: itemsValidos.map(function(i){
+      const cant = parseInt(i.cantidad)||0;
+      const cantFalla = i.tieneFalla ? Math.min(parseInt(i.cantidadFalla)||0, cant) : 0;
+      return {
+        sku:i.sku, descripcion:i.descripcion, talle:i.talle, color:i.color,
+        cantidad: cant, tieneFalla: !!i.tieneFalla, cantidadFalla: cantFalla,
+        disponible: cant - cantFalla,
+        _tmpId: i._tmpId
+      };
+    }),
+    fallas: ingresoFallas.filter(function(f){return f.sku||f.tipo;}).map(function(f){
+      return {sku:f.sku, tipo:f.tipo, descripcion:f.descripcion, itemTmpId:f.itemTmpId};
+    })
+  };
+  DB.ingresos.unshift(ingreso);
+
+  // Si se cargó una prenda manual con SKU y descripción que no está en el catálogo, la guardamos para futuros ingresos
+  ingreso.items.forEach(function(it){
+    if(it.sku && it.descripcion){
+      const existe = DB.catalogo.some(function(c){return c.sku.toLowerCase()===it.sku.toLowerCase();});
+      if(!existe){
+        DB.catalogo.push({sku:it.sku, descripcion:it.descripcion, talle:it.talle, color:it.color, categoria:''});
+      }
+    }
+    if(it.descripcion && !DB.productos.some(function(p){return p.toLowerCase()===it.descripcion.toLowerCase();})){
+      DB.productos.push(it.descripcion);
+    }
+  });
+
+  saveData();
+  toast('Ingreso guardado correctamente');
+
+  document.getElementById('ing-remito').value='';
+  document.getElementById('ing-obs').value='';
+  document.getElementById('ing-operario').value='';
+  document.getElementById('ing-taller').value='';
+  document.getElementById('ing-fecha').value = new Date().toISOString().slice(0,10);
+  ingresoItems=[emptyItem()]; ingresoFallas=[];
+  document.getElementById('ing-stock-info').innerHTML='';
+  refreshQuickIngresoSelects();
+  renderIngresoItems(); renderIngresoFallas();
+  const firstSkuInput = document.querySelector('#ing-items input[data-skufield]');
+  if(firstSkuInput) firstSkuInput.focus();
+}
+
+let scanBuffer=''; let scanTimeout=null;
+document.addEventListener('keydown',function(e){
+  const modal = document.getElementById('role-modal');
+  if(modal && modal.style.display!=='none') return;
+  const tag = e.target.tagName;
+  if(tag==='INPUT' || tag==='TEXTAREA' || tag==='SELECT') return;
+  const pageIngreso = document.getElementById('page-ingreso');
+  if(pageIngreso && !pageIngreso.classList.contains('active')) return;
+  if(e.key==='Enter' && scanBuffer.length>2){
+    const sku = scanBuffer.trim(); scanBuffer='';
+    const prod = DB.catalogo.find(function(c){return c.sku.toLowerCase()===sku.toLowerCase();});
+    const existIdx = ingresoItems.findIndex(function(i){return i.sku===sku;});
+    if(existIdx>=0){
+      ingresoItems[existIdx].cantidad = (parseInt(ingresoItems[existIdx].cantidad)||0)+1;
+    }else{
+      const ni = emptyItem(); ni.sku=sku;
+      if(prod){ ni.descripcion=prod.descripcion; ni.talle=prod.talle||'M'; ni.color=prod.color||''; }
+      ingresoItems = ingresoItems.filter(function(i){return i.sku!=='';});
+      ingresoItems.push(ni);
+    }
+    renderIngresoItems();
+    toast(prod?(prod.descripcion+' agregado'):('SKU '+sku+' agregado'));
+  }else if(e.key!=='Enter' && e.key.length===1){
+    clearTimeout(scanTimeout);
+    scanBuffer += e.key;
+    scanTimeout = setTimeout(function(){scanBuffer='';},300);
+  }
+});
+
+function renderHistorial(){
+  const desde = document.getElementById('hist-desde').value;
+  const hasta = document.getElementById('hist-hasta').value;
+  let list = DB.ingresos.slice();
+  if(desde) list = list.filter(function(i){return i.fecha>=desde;});
+  if(hasta) list = list.filter(function(i){return i.fecha<=hasta;});
+
+  const tbody = document.getElementById('historial-tbody');
+  if(list.length===0){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><p>No hay ingresos registrados</p></div></td></tr>';
+    document.getElementById('historial-detail-card').style.display='none';
+    return;
+  }
+  tbody.innerHTML = list.map(function(i){
+    const totalPrendas = i.items.reduce(function(s,it){return s+it.cantidad;},0);
+    return '<tr style="cursor:pointer;" onclick="showHistorialDetail('+i.id+')">'+
+      '<td style="font-family:var(--mono);font-size:12px;">'+formatFechaHora(i.createdAt||i.fecha)+'</td>'+
+      '<td><span class="sku-chip">'+esc(i.nroRemito||'-')+'</span></td>'+
+      '<td>'+esc(i.operario||'-')+'</td>'+
+      '<td style="color:var(--text-2);">'+esc(i.taller||'-')+'</td>'+
+      '<td style="font-weight:500;">'+totalPrendas+'</td>'+
+      '<td>'+(i.fallas.length>0?('<span class="badge badge-warn">'+i.fallas.length+' falla'+(i.fallas.length>1?'s':'')+'</span>'):'<span class="badge badge-success">OK</span>')+'</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function showHistorialDetail(id){
+  const ing = DB.ingresos.find(function(i){return i.id===id;});
+  if(!ing) return;
+  const card = document.getElementById('historial-detail-card');
+  const grid = document.getElementById('historial-grid');
+  grid.style.gridTemplateColumns='1fr 1fr';
+  card.style.display='block';
+  let html = '<div style="display:flex;justify-content:space-between;margin-bottom:16px;">'+
+    '<p class="card-title" style="margin-bottom:0;">Detalle</p>'+
+    '<button class="btn btn-secondary btn-sm" onclick="closeHistorialDetail()">x</button></div>'+
+    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;font-size:13px;">'+
+    '<div><span style="color:var(--text-3);">Fecha y hora:</span> '+formatFechaHora(ing.createdAt||ing.fecha)+'</div>'+
+    '<div><span style="color:var(--text-3);">Remito:</span> '+esc(ing.nroRemito||'-')+'</div>'+
+    '<div><span style="color:var(--text-3);">Operario:</span> '+esc(ing.operario||'-')+'</div>'+
+    '<div><span style="color:var(--text-3);">Taller:</span> '+esc(ing.taller||'-')+'</div>'+
+    '</div><hr class="section-sep" style="margin:12px 0;">'+
+    '<p style="font-size:12px;font-weight:600;color:var(--text-3);margin-bottom:8px;">PRENDAS</p>'+
+    '<div class="table-wrap"><table><thead><tr><th>SKU</th><th>Descripción</th><th>Talle</th><th>Color</th><th>Cant.</th><th></th></tr></thead><tbody>';
+  ing.items.forEach(function(it){
+    html += '<tr><td><span class="sku-chip">'+esc(it.sku)+'</span></td><td>'+esc(it.descripcion)+'</td><td>'+esc(it.talle)+'</td><td>'+esc(it.color||'-')+'</td><td style="font-weight:500;">'+it.cantidad+'</td><td>'+(it.tieneFalla?('<span class="badge badge-warn">'+(it.cantidadFalla||0)+' de '+it.cantidad+' con falla</span>'):'')+'</td></tr>';
+  });
+  html += '</tbody></table></div>';
+  if(ing.fallas.length>0){
+    html += '<hr class="section-sep" style="margin:12px 0;"><p style="font-size:12px;font-weight:600;color:var(--danger);margin-bottom:8px;">FALLAS</p>';
+    ing.fallas.forEach(function(f){
+      html += '<div style="background:var(--danger-light);border:1px solid #F5C6C2;border-radius:var(--radius);padding:10px 12px;margin-bottom:8px;font-size:13px;">'+
+        '<div style="display:flex;justify-content:space-between;margin-bottom:4px;"><span class="sku-chip">'+esc(f.sku)+'</span><span class="badge badge-danger">'+esc(f.tipo)+'</span></div>'+
+        '<p style="color:var(--text-2);margin-top:4px;">'+esc(f.descripcion)+'</p></div>';
+    });
+  }
+  if(ing.observaciones){
+    html += '<hr class="section-sep" style="margin:12px 0;"><p style="font-size:12px;color:var(--text-3);">Obs: '+esc(ing.observaciones)+'</p>';
+  }
+  document.getElementById('historial-detail').innerHTML = html;
+}
+function closeHistorialDetail(){
+  document.getElementById('historial-detail-card').style.display='none';
+  document.getElementById('historial-grid').style.gridTemplateColumns='1fr';
+}
+
+function getStock(){
+  const map = {};
+  DB.ingresos.forEach(function(ing){
+    ing.items.forEach(function(it){
+      const key = (it.sku||'')+'|'+(it.descripcion||'')+'|'+it.talle+'|'+(it.color||'');
+      if(!map[key]) map[key]={sku:it.sku,descripcion:it.descripcion,talle:it.talle,color:it.color,total:0,disponible:0,conFalla:0,ultimoIngreso:null};
+      map[key].total += it.cantidad;
+      map[key].disponible += it.disponible;
+      if(it.tieneFalla) map[key].conFalla += (it.cantidadFalla||it.cantidad);
+      const ts = ing.createdAt || ing.fecha;
+      if(!map[key].ultimoIngreso || ts>map[key].ultimoIngreso) map[key].ultimoIngreso = ts;
+    });
+  });
+  return Object.values(map).sort(function(a,b){return (a.descripcion||'').localeCompare(b.descripcion||'');});
+}
+
+function formatFechaHora(iso){
+  if(!iso) return '-';
+  const d = new Date(iso);
+  if(isNaN(d.getTime())) return esc(iso);
+  const pad = function(n){return n<10?'0'+n:''+n;};
+  return pad(d.getDate())+'/'+pad(d.getMonth()+1)+'/'+d.getFullYear()+' '+pad(d.getHours())+':'+pad(d.getMinutes());
+}
+
+function renderStock(){
+  const stock = getStock();
+  const search = (document.getElementById('stock-search').value||'').toLowerCase();
+  const filtered = stock.filter(function(s){return s.sku.toLowerCase().includes(search)||(s.descripcion||'').toLowerCase().includes(search);});
+
+  document.getElementById('stock-metrics').innerHTML =
+    '<div class="metric-card"><div class="metric-label">SKUs distintos</div><div class="metric-value">'+stock.length+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Total unidades</div><div class="metric-value">'+filtered.reduce(function(s,i){return s+i.total;},0).toLocaleString()+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Con alguna falla</div><div class="metric-value" style="color:var(--warn);">'+stock.filter(function(s){return s.conFalla>0;}).length+'</div></div>';
+
+  const tbody = document.getElementById('stock-tbody');
+  if(filtered.length===0){
+    tbody.innerHTML = '<tr><td colspan="9"><div class="empty"><p>No hay stock registrado</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(function(s){
+    const pct = s.total>0?Math.round((s.conFalla/s.total)*100):0;
+    return '<tr><td><span class="sku-chip">'+esc(s.sku)+'</span></td><td>'+esc(s.descripcion||'-')+'</td><td>'+esc(s.talle||'-')+'</td><td>'+esc(s.color||'-')+'</td>'+
+    '<td style="font-weight:500;">'+s.total+'</td><td style="font-weight:500;color:var(--success);">'+s.disponible+'</td>'+
+    '<td>'+(s.conFalla>0?('<span class="badge badge-warn">'+s.conFalla+'</span>'):'<span style="color:var(--text-3);">-</span>')+'</td>'+
+    '<td>'+(pct>0?('<span class="badge" style="background:'+(pct>10?'var(--danger-light)':'var(--warn-light)')+';color:'+(pct>10?'var(--danger)':'var(--warn)')+';">'+pct+'%</span>'):'<span style="color:var(--text-3);">0%</span>')+'</td>'+
+    '<td style="font-family:var(--mono);font-size:12px;color:var(--text-2);">'+formatFechaHora(s.ultimoIngreso)+'</td></tr>';
+  }).join('');
+}
+
+let estampaTab='lista';
+function setEstampaTab(tab){
+  estampaTab=tab;
+  document.getElementById('est-tab-lista').className = tab==='lista'?'btn btn-primary':'btn btn-secondary';
+  document.getElementById('est-tab-nuevo').className = tab==='nuevo'?'btn btn-primary':'btn btn-secondary';
+  document.getElementById('est-form-wrap').style.display = tab==='nuevo'?'block':'none';
+  document.getElementById('est-lista-wrap').style.display = tab==='lista'?'block':'none';
+  if(tab==='nuevo') renderEstampaForm();
+}
+
+function getItemsDisponibles(){
+  const out=[];
+  DB.ingresos.forEach(function(ing){
+    ing.items.forEach(function(it,idx){
+      if(it.disponible>0) out.push({tipo:'ingreso', ingresoId:ing.id, itemIdx:idx, sku:it.sku, descripcion:it.descripcion, talle:it.talle, color:it.color, disponible:it.disponible, taller:ing.taller, fecha:ing.fecha, nroRemito:ing.nroRemito});
+    });
+  });
+  DB.producciones.forEach(function(p){
+    (p.desglose||[]).forEach(function(d,dIdx){
+      if(d.disponible>0) out.push({tipo:'produccion', prodId:p.id, desgloseIdx:dIdx, sku:p.nroRemito||'', descripcion:p.descripcion, talle:d.talle, color:d.color, disponible:d.disponible, taller:p.taller, fecha:p.fechaInicio});
+    });
+  });
+  return out.sort(function(a,b){return b.fecha.localeCompare(a.fecha);});
+}
+
+let estampasExpandidos = {};
+function toggleLoteEstampa(key){
+  estampasExpandidos[key] = !estampasExpandidos[key];
+  renderEstampas();
+}
+function groupEstampasByLote(list){
+  const groups = {}; const order = [];
+  list.forEach(function(e){
+    const key = String(e.loteId || e.id);
+    if(!groups[key]){
+      groups[key] = {key:key, fecha:e.fecha, tallerEstampa:e.tallerEstampa, tallerOrigen:e.tallerOrigen, items:[]};
+      order.push(key);
+    }
+    if(groups[key].tallerOrigen!==e.tallerOrigen) groups[key].tallerOrigen='Varios';
+    groups[key].items.push(e);
+  });
+  return order.map(function(k){return groups[k];});
+}
+function finalizarLote(key){
+  let cambios=0;
+  DB.estampas.forEach(function(e){
+    if(String(e.loteId||e.id)===key && e.estado==='en_proceso'){ e.estado='finalizado'; cambios++; }
+  });
+  saveData();
+  toast(cambios+' prenda'+(cambios!==1?'s':'')+' marcadas como finalizadas');
+  renderEstampas();
+}
+
+function renderEstampas(){
+  const enProceso = DB.estampas.filter(function(e){return e.estado==='en_proceso';});
+  const finalizadas = DB.estampas.filter(function(e){return e.estado==='finalizado';});
+
+  document.getElementById('estampas-metrics').innerHTML =
+    '<div class="metric-card"><div class="metric-label">En proceso</div><div class="metric-value" style="color:var(--blue);">'+enProceso.length+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Prendas en estampa</div><div class="metric-value">'+enProceso.reduce(function(s,e){return s+e.cantidad;},0)+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Finalizadas</div><div class="metric-value" style="color:var(--success);">'+finalizadas.length+'</div></div>';
+
+  setEstampaTab(estampaTab);
+
+  const wrap = document.getElementById('est-lista-wrap');
+  const lotesEnProceso = groupEstampasByLote(enProceso);
+  let html = '<div class="card" style="margin-bottom:16px;"><div class="card-body" style="padding-bottom:0;"><p class="card-title" style="color:var(--blue);">En proceso - '+lotesEnProceso.length+' envío'+(lotesEnProceso.length!==1?'s':'')+' / '+enProceso.reduce(function(s,e){return s+e.cantidad;},0)+' prendas</p></div>';
+  if(lotesEnProceso.length===0){
+    html += '<div class="empty" style="padding:24px;"><p>No hay estampas en proceso</p></div>';
+  }else{
+    html += '<div class="table-wrap"><table><thead><tr><th></th><th>Fecha</th><th>Taller estampa</th><th>Taller origen</th><th>Variantes</th><th>Total prendas</th><th>Acción</th></tr></thead><tbody>';
+    lotesEnProceso.forEach(function(g){
+      const total = g.items.reduce(function(s,e){return s+e.cantidad;},0);
+      const expanded = !!estampasExpandidos[g.key];
+      html += '<tr style="cursor:pointer;" onclick="toggleLoteEstampa(\''+g.key+'\')">'+
+        '<td style="text-align:center;color:var(--text-3);">'+(expanded?'▾':'▸')+'</td>'+
+        '<td style="font-family:var(--mono);font-size:12px;">'+g.fecha+'</td>'+
+        '<td><span class="badge badge-info">'+esc(g.tallerEstampa)+'</span></td>'+
+        '<td>'+esc(g.tallerOrigen||'-')+'</td>'+
+        '<td>'+g.items.length+'</td>'+
+        '<td style="font-weight:600;">'+total+'</td>'+
+        '<td><button class="btn btn-secondary btn-sm" onclick="event.stopPropagation();finalizarLote(\''+g.key+'\')">Finalizar todo</button></td></tr>';
+      if(expanded){
+        html += '<tr><td></td><td colspan="6" style="padding:0;"><div style="padding:8px 0 12px 0;"><table style="width:100%;"><thead><tr>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">SKU</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Descripción</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Talle</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Color</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Cant.</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Acción</th></tr></thead><tbody>';
+        g.items.forEach(function(e){
+          html += '<tr><td style="padding:4px 14px;">'+(e.sku?('<span class="sku-chip">'+esc(e.sku)+'</span>'):'-')+'</td>'+
+            '<td style="padding:4px 14px;">'+esc(e.descripcion||'-')+'</td>'+
+            '<td style="padding:4px 14px;">'+esc(e.talle||'-')+'</td>'+
+            '<td style="padding:4px 14px;">'+esc(e.color||'-')+'</td>'+
+            '<td style="padding:4px 14px;font-weight:500;">'+e.cantidad+'</td>'+
+            '<td style="padding:4px 14px;"><button class="btn btn-secondary btn-sm" onclick="finalizarEstampa('+e.id+')">Finalizar</button></td></tr>';
+        });
+        html += '</tbody></table></div></td></tr>';
+      }
+    });
+    html += '</tbody></table></div>';
+  }
+  html += '</div>';
+
+  if(finalizadas.length>0){
+    const lotesFinalizados = groupEstampasByLote(finalizadas);
+    html += '<div class="card"><div class="card-body" style="padding-bottom:0;"><p class="card-title" style="color:var(--success);">Finalizadas - '+lotesFinalizados.length+' envío'+(lotesFinalizados.length!==1?'s':'')+' / '+finalizadas.reduce(function(s,e){return s+e.cantidad;},0)+' prendas</p></div><div class="table-wrap"><table><thead><tr><th></th><th>Fecha</th><th>Taller estampa</th><th>Taller origen</th><th>Variantes</th><th>Total prendas</th></tr></thead><tbody>';
+    lotesFinalizados.forEach(function(g){
+      const total = g.items.reduce(function(s,e){return s+e.cantidad;},0);
+      const key = 'fin-'+g.key;
+      const expanded = !!estampasExpandidos[key];
+      html += '<tr style="cursor:pointer;" onclick="toggleLoteEstampa(\''+key+'\')">'+
+        '<td style="text-align:center;color:var(--text-3);">'+(expanded?'▾':'▸')+'</td>'+
+        '<td style="font-family:var(--mono);font-size:12px;">'+g.fecha+'</td>'+
+        '<td><span class="badge badge-success">'+esc(g.tallerEstampa)+'</span></td>'+
+        '<td>'+esc(g.tallerOrigen||'-')+'</td>'+
+        '<td>'+g.items.length+'</td>'+
+        '<td style="font-weight:600;">'+total+'</td></tr>';
+      if(expanded){
+        html += '<tr><td></td><td colspan="5" style="padding:0;"><div style="padding:8px 0 12px 0;"><table style="width:100%;"><thead><tr>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">SKU</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Descripción</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Talle</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Color</th>'+
+          '<th style="font-size:11px;color:var(--text-3);text-align:left;padding:4px 14px;">Cant.</th></tr></thead><tbody>';
+        g.items.forEach(function(e){
+          html += '<tr><td style="padding:4px 14px;">'+(e.sku?('<span class="sku-chip">'+esc(e.sku)+'</span>'):'-')+'</td>'+
+            '<td style="padding:4px 14px;">'+esc(e.descripcion||'-')+'</td>'+
+            '<td style="padding:4px 14px;">'+esc(e.talle||'-')+'</td>'+
+            '<td style="padding:4px 14px;">'+esc(e.color||'-')+'</td>'+
+            '<td style="padding:4px 14px;font-weight:500;">'+e.cantidad+'</td></tr>';
+        });
+        html += '</tbody></table></div></td></tr>';
+      }
+    });
+    html += '</tbody></table></div></div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function getEstampaGroups(){
+  const itemsDisp = getItemsDisponibles();
+  const groups = {}; const order = [];
+  itemsDisp.forEach(function(item, idx){
+    let key, label;
+    if(item.tipo==='produccion'){
+      key = 'prod:'+item.prodId;
+      label = 'Corte: '+item.descripcion+(item.sku?(' (Remito '+item.sku+')'):'')+' - Taller '+item.taller+' - '+item.fecha;
+    }else{
+      key = 'ing:'+item.ingresoId;
+      label = 'Ingreso '+item.fecha+(item.nroRemito?(' - Remito '+item.nroRemito):'')+' - Taller '+(item.taller||'-');
+    }
+    if(!groups[key]){ groups[key]={label:label, indices:[]}; order.push(key); }
+    groups[key].indices.push(idx);
+  });
+  return {itemsDisp:itemsDisp, groups:groups, order:order};
+}
+
+function buildItemsDispOptions(ctx){
+  return ctx.order.map(function(key){
+    const g = ctx.groups[key];
+    const totalDisp = g.indices.reduce(function(s,idx){return s+ctx.itemsDisp[idx].disponible;},0);
+    let opts = '';
+    if(g.indices.length>1){
+      opts += '<option value="all:'+key+'">— Enviar TODO este corte/ingreso ('+totalDisp+' prendas) —</option>';
+    }
+    opts += g.indices.map(function(idx){
+      const i = ctx.itemsDisp[idx];
+      let label = 'Talle '+esc(i.talle)+(i.color?(' / '+esc(i.color)):'')+' - Disponible: '+i.disponible;
+      if(i.tipo==='ingreso'){
+        const codigo = i.sku ? ('['+esc(i.sku)+'] ') : '';
+        label = codigo+esc(i.descripcion||'Sin desc')+' | '+label;
+      }
+      return '<option value="'+idx+'">'+label+'</option>';
+    }).join('');
+    return '<optgroup label="'+esc(g.label)+'">'+opts+'</optgroup>';
+  }).join('');
+}
+
+function renderEstampaForm(){
+  const today = new Date().toISOString().slice(0,10);
+  const ctx = getEstampaGroups();
+  let html = '<div class="card" style="margin-bottom:20px;"><div class="card-body">'+
+    '<p class="card-title">Nueva prenda para mandar a estampar</p>'+
+    '<div class="form-grid cols3" style="margin-bottom:16px;">'+
+    '<div class="field"><label>Fecha</label><input type="date" id="est-fecha" value="'+today+'"></div>'+
+    '<div class="field" style="grid-column:span 2;"><label>Taller de estampa *</label><div style="display:flex;gap:6px;"><select id="est-taller" style="flex:1;"><option value="">Seleccionar taller...</option>'+
+    DB.talleresEstampa.map(function(t){return '<option>'+esc(t)+'</option>';}).join('')+'</select><button type="button" class="btn btn-secondary btn-sm" onclick="agregarTallerEstampa()" title="Agregar taller">+</button></div></div></div>'+
+    '<div style="background:var(--bg);border-radius:var(--radius);padding:12px 16px;margin-bottom:16px;">'+
+    '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;"><span style="font-size:13px;font-weight:500;">Origen de las prendas</span>'+
+    '<label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer;"><input type="checkbox" id="est-manual" onchange="toggleEstampaManual(this.checked)">Ingresar manualmente</label></div>'+
+    '<div id="est-origen-stock"><div class="field"><label>Elegir corte / prenda en stock</label><select id="est-item-sel" onchange="onEstampaItemChange(this.value)"><option value="">- Elegir corte o prenda -</option>'+
+    buildItemsDispOptions(ctx)+
+    '</select></div><div id="est-item-info" style="margin-top:8px;font-size:13px;color:var(--text-2);"></div></div>'+
+    '<div id="est-origen-manual" style="display:none;"><div class="form-grid cols3">'+
+    '<div class="field"><label>SKU (opcional)</label><input class="sku-input" id="est-m-sku" placeholder="SKU de la prenda"></div>'+
+    '<div class="field" style="grid-column:span 2;"><label>Descripción</label><input id="est-m-desc" placeholder="Descripción"></div>'+
+    '<div class="field"><label>Talle</label><select id="est-m-talle">'+getTalles().map(function(t){return '<option>'+t+'</option>';}).join('')+'</select></div>'+
+    '<div class="field"><label>Color</label><select id="est-m-color" onchange="onColorChangeEstampaManual(this)">'+colorOptionsHtml('')+'</select></div>'+
+    '<div class="field"><label>Taller de confección</label><select id="est-m-taller"><option value="">Sin especificar</option>'+
+    DB.talleresConfeccion.map(function(t){return '<option>'+esc(t)+'</option>';}).join('')+'</select></div>'+
+    '</div></div></div>'+
+    '<div class="form-grid cols3"><div class="field"><label>Cantidad a traspasar *</label><input type="number" min="1" id="est-cantidad" placeholder="Ej: 100" oninput="checkEstampaCantidad()"><div id="est-cantidad-warn" style="font-size:12px;color:var(--danger);"></div></div>'+
+    '<div class="field" style="grid-column:span 2;"><label>Observaciones</label><input id="est-obs" placeholder="Notas opcionales"></div></div>'+
+    '<div style="margin-top:20px;display:flex;gap:8px;"><button class="btn btn-primary" onclick="guardarEstampa()">Registrar traspaso</button>'+
+    '<button class="btn btn-secondary" onclick="setEstampaTab(\'lista\')">Cancelar</button></div></div></div>';
+  document.getElementById('est-form-wrap').innerHTML = html;
+}
+function toggleEstampaManual(checked){
+  document.getElementById('est-origen-stock').style.display = checked?'none':'block';
+  document.getElementById('est-origen-manual').style.display = checked?'block':'none';
+}
+function onEstampaItemChange(value){
+  const ctx = getEstampaGroups();
+  const info = document.getElementById('est-item-info');
+  const cantInput = document.getElementById('est-cantidad');
+  if(!value){
+    info.innerHTML='';
+    cantInput.disabled=false;
+    cantInput.value='';
+    document.getElementById('est-cantidad-warn').textContent='';
+    return;
+  }
+  if(value.indexOf('all:')===0){
+    const key = value.slice(4);
+    const g = ctx.groups[key];
+    const items = g.indices.map(function(idx){return ctx.itemsDisp[idx];});
+    const total = items.reduce(function(s,i){return s+i.disponible;},0);
+    const breakdown = items.map(function(i){
+      return '<span class="badge badge-info" style="margin:2px;">'+esc(i.descripcion||'-')+' '+esc(i.talle)+(i.color?(' / '+esc(i.color)):'')+': '+i.disponible+'</span>';
+    }).join(' ');
+    info.innerHTML = '<div style="padding:8px 12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);">Se enviará el corte/ingreso <strong>completo</strong> — Total: <strong>'+total+' prendas</strong><br><div style="margin-top:6px;">'+breakdown+'</div></div>';
+    cantInput.value = total;
+    cantInput.disabled = true;
+    document.getElementById('est-cantidad-warn').textContent='';
+    return;
+  }
+  cantInput.disabled = false;
+  const item = ctx.itemsDisp[value];
+  if(!item){ info.innerHTML=''; return; }
+  const origenLbl = item.tipo==='produccion' ? 'Corte de producción' : 'Ingreso';
+  const skuPart = item.sku ? (' - SKU: <span class="sku-chip">'+esc(item.sku)+'</span>') : '';
+  info.innerHTML = '<div style="padding:8px 12px;background:var(--surface);border-radius:var(--radius);border:1px solid var(--border);">Disponible: <strong>'+item.disponible+' prendas</strong> ('+esc(item.descripcion||'-')+', Talle '+esc(item.talle)+(item.color?(' / '+esc(item.color)):'')+')'+skuPart+' - '+origenLbl+' - Taller: '+esc(item.taller||'-')+'</div>';
+  checkEstampaCantidad();
+}
+function checkEstampaCantidad(){
+  const manual = document.getElementById('est-manual').checked;
+  const warn = document.getElementById('est-cantidad-warn');
+  if(manual){ warn.textContent=''; return; }
+  const val = document.getElementById('est-item-sel').value;
+  if(!val || val.indexOf('all:')===0){ warn.textContent=''; return; }
+  const ctx = getEstampaGroups();
+  const item = ctx.itemsDisp[val];
+  const cant = parseInt(document.getElementById('est-cantidad').value)||0;
+  if(item && cant>item.disponible){ warn.textContent = 'Supera el disponible ('+item.disponible+')'; }
+  else warn.textContent='';
+}
+
+function guardarEstampa(){
+  const fecha = document.getElementById('est-fecha').value;
+  const tallerEstampa = document.getElementById('est-taller').value;
+  const obs = document.getElementById('est-obs').value;
+  const manual = document.getElementById('est-manual').checked;
+
+  if(!tallerEstampa){ alert('Seleccioná el taller de estampa'); return; }
+
+  if(!manual){
+    const selVal = document.getElementById('est-item-sel').value;
+    if(selVal && selVal.indexOf('all:')===0){
+      const ctx = getEstampaGroups();
+      const key = selVal.slice(4);
+      const g = ctx.groups[key];
+      const loteId = nextId();
+      let countCreated = 0;
+      g.indices.forEach(function(idx){
+        const item = ctx.itemsDisp[idx];
+        const cant = item.disponible;
+        if(cant<=0) return;
+        let origenIngresoId=null, origenItemIdx=null, origenProdId=null, origenDesgloseIdx=null;
+        if(item.tipo==='produccion'){
+          origenProdId=item.prodId; origenDesgloseIdx=item.desgloseIdx;
+          DB.producciones.find(function(x){return x.id===item.prodId;}).desglose[item.desgloseIdx].disponible = 0;
+        }else{
+          origenIngresoId=item.ingresoId; origenItemIdx=item.itemIdx;
+          DB.ingresos.find(function(i){return i.id===item.ingresoId;}).items[item.itemIdx].disponible = 0;
+        }
+        DB.estampas.unshift({
+          id: nextId(), loteId: loteId, fecha: fecha, tallerEstampa: tallerEstampa, sku: item.sku, descripcion: item.descripcion, talle: item.talle, color: item.color, cantidad: cant,
+          tallerOrigen: item.taller||null,
+          estado:'en_proceso', observaciones: obs,
+          origenIngresoId: origenIngresoId, origenItemIdx: origenItemIdx,
+          origenProdId: origenProdId, origenDesgloseIdx: origenDesgloseIdx,
+          createdAt: new Date().toISOString()
+        });
+        countCreated++;
+      });
+      saveData();
+      toast('Corte/ingreso completo enviado a estampa ('+countCreated+' variantes)');
+      setEstampaTab('lista');
+      renderEstampas();
+      return;
+    }
+  }
+
+  const cantidad = parseInt(document.getElementById('est-cantidad').value)||0;
+  if(cantidad<=0){ alert('Ingresá una cantidad válida'); return; }
+
+  let sku,descripcion,talle,color, tallerOrigen=null, origenIngresoId=null, origenItemIdx=null, origenProdId=null, origenDesgloseIdx=null;
+
+  if(manual){
+    sku = document.getElementById('est-m-sku').value;
+    descripcion = document.getElementById('est-m-desc').value;
+    talle = document.getElementById('est-m-talle').value;
+    color = document.getElementById('est-m-color').value;
+    tallerOrigen = document.getElementById('est-m-taller').value || null;
+    if(!descripcion){ alert('Ingresá una descripción de la prenda'); return; }
+  }else{
+    const ctx = getEstampaGroups();
+    const idx = document.getElementById('est-item-sel').value;
+    const item = ctx.itemsDisp[idx];
+    if(!item){ alert('Seleccioná una prenda del stock'); return; }
+    if(cantidad>item.disponible){ alert('Solo hay '+item.disponible+' prendas disponibles'); return; }
+    sku=item.sku; descripcion=item.descripcion; talle=item.talle; color=item.color; tallerOrigen=item.taller||null;
+    if(item.tipo==='produccion'){
+      origenProdId=item.prodId; origenDesgloseIdx=item.desgloseIdx;
+      const prod = DB.producciones.find(function(x){return x.id===item.prodId;});
+      prod.desglose[item.desgloseIdx].disponible -= cantidad;
+    }else{
+      origenIngresoId=item.ingresoId; origenItemIdx=item.itemIdx;
+      const ing = DB.ingresos.find(function(i){return i.id===item.ingresoId;});
+      ing.items[item.itemIdx].disponible -= cantidad;
+    }
+  }
+
+  DB.estampas.unshift({
+    id: nextId(), fecha: fecha, tallerEstampa: tallerEstampa, sku: sku, descripcion: descripcion, talle: talle, color: color, cantidad: cantidad,
+    tallerOrigen: tallerOrigen,
+    estado:'en_proceso', observaciones: obs,
+    origenIngresoId: origenIngresoId, origenItemIdx: origenItemIdx,
+    origenProdId: origenProdId, origenDesgloseIdx: origenDesgloseIdx,
+    createdAt: new Date().toISOString()
+  });
+  saveData();
+  toast('Traspaso registrado');
+  setEstampaTab('lista');
+  renderEstampas();
+}
+
+function finalizarEstampa(id){
+  const e = DB.estampas.find(function(x){return x.id===id;});
+  if(e){ e.estado='finalizado'; saveData(); toast('Estado actualizado'); renderEstampas(); }
+}
+
+function agregarTallerConfeccionProd(){
+  const nombre = prompt('Nombre del nuevo taller de confección:');
+  if(!nombre || !nombre.trim()) return;
+  const n = nombre.trim();
+  if(DB.talleresConfeccion.some(function(t){return t.toLowerCase()===n.toLowerCase();})){
+    toast('Ese taller ya existe');
+    return;
+  }
+  DB.talleresConfeccion.push(n);
+  saveData();
+  tallerActivo = n;
+  toast('Taller agregado');
+  renderProduccion();
+}
+
+let tallerActivo = null;
+function renderProduccion(){
+  if(!tallerActivo) tallerActivo = DB.talleresConfeccion[0];
+
+  const grid = document.getElementById('prod-talleres-grid');
+  grid.innerHTML = DB.talleresConfeccion.map(function(t){
+    const prods = DB.producciones.filter(function(p){return p.taller===t && p.estado==='en_proceso';});
+    const ordenes = prods.length;
+    const prendas = prods.reduce(function(s,p){return s+(p.cantidadTotal||p.cantidad||0);},0);
+    return '<div class="taller-card '+(t===tallerActivo?'active':'')+'" onclick="setTallerActivo(\''+esc(t)+'\')">'+
+      '<div class="taller-card-name" style="'+(t===tallerActivo?'color:var(--blue);':'')+'">'+esc(t)+'</div>'+
+      '<div class="taller-card-stats"><div><div class="num" style="color:'+(ordenes>0?'var(--blue)':'var(--text-3)')+';">'+ordenes+'</div><div class="lbl">órdenes</div></div>'+
+      '<div><div class="num" style="color:'+(prendas>0?'var(--text)':'var(--text-3)')+';">'+prendas+'</div><div class="lbl">prendas</div></div></div></div>';
+  }).join('');
+
+  renderProdPanel();
+}
+function setTallerActivo(t){ tallerActivo=t; prodShowForm=false; renderProduccion(); }
+
+let prodShowForm=false;
+let prodDesglose=[];
+function toggleProdForm(){
+  prodShowForm=!prodShowForm;
+  if(prodShowForm){ prodDesglose=[{talle:'M',color:'',cantidad:0}]; }
+  renderProdPanel();
+}
+function addProdDesgloseRow(){ prodDesglose.push({talle:'M',color:'',cantidad:0}); renderProdDesgloseRows(); }
+function removeProdDesgloseRow(idx){
+  prodDesglose.splice(idx,1);
+  if(prodDesglose.length===0) prodDesglose.push({talle:'M',color:'',cantidad:0});
+  renderProdDesgloseRows();
+}
+function updProdDesglose(idx,field,val){
+  prodDesglose[idx][field]=val;
+  if(field==='cantidad') document.getElementById('prod-total').textContent = prodDesglose.reduce(function(s,d){return s+(parseInt(d.cantidad)||0);},0);
+}
+function renderProdDesgloseRows(){
+  const tbody = document.getElementById('prod-desglose-rows');
+  if(!tbody) return;
+  tbody.innerHTML = prodDesglose.map(function(d,idx){
+    return '<tr>'+
+      '<td><select onchange="updProdDesglose('+idx+',\'talle\',this.value)">'+getTalles().map(function(t){return '<option '+(t===d.talle?'selected':'')+'>'+t+'</option>';}).join('')+'</select></td>'+
+      '<td><select onchange="onColorChangeProd('+idx+',this)">'+colorOptionsHtml(d.color)+'</select></td>'+
+      '<td><input type="number" min="0" value="'+d.cantidad+'" oninput="updProdDesglose('+idx+',\'cantidad\',parseInt(this.value)||0)" style="text-align:center;"></td>'+
+      '<td><button class="btn btn-danger btn-sm" style="padding:4px 8px;" onclick="removeProdDesgloseRow('+idx+')">x</button></td>'+
+    '</tr>';
+  }).join('');
+  document.getElementById('prod-total').textContent = prodDesglose.reduce(function(s,d){return s+(parseInt(d.cantidad)||0);},0);
+}
+
+function renderProdPanel(){
+  const today = new Date().toISOString().slice(0,10);
+  const enProceso = DB.producciones.filter(function(p){return p.taller===tallerActivo && p.estado==='en_proceso';});
+  const finalizadas = DB.producciones.filter(function(p){return p.taller===tallerActivo && p.estado==='finalizado';});
+
+  let html = '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;"><h2 style="font-size:18px;font-weight:600;">Taller '+esc(tallerActivo)+'</h2>'+
+    '<button class="btn btn-primary" onclick="toggleProdForm()">'+(prodShowForm?'Cancelar':'+ Nueva orden de producción')+'</button></div>';
+
+  if(prodShowForm){
+    html += '<div class="card" style="margin-bottom:16px;border:1px solid #BDD0F5;"><div class="card-body">'+
+      '<p class="card-title">Nueva orden - Taller '+esc(tallerActivo)+'</p>'+
+      '<div class="form-grid cols3">'+
+      '<div class="field"><label>Fecha inicio</label><input type="date" id="prod-fecha-inicio" value="'+today+'"></div>'+
+      '<div class="field"><label>Entrega estimada</label><input type="date" id="prod-fecha-entrega"></div>'+
+      '<div class="field"><label>N° de remito</label><input class="sku-input" id="prod-remito" placeholder="Ej: REM-0099"></div>'+
+      '<div class="field" style="grid-column:1 / -1;"><label>Producto *</label><div style="display:flex;gap:6px;"><select id="prod-producto" style="flex:1;"><option value="">Seleccionar producto...</option>'+
+      DB.productos.map(function(p){return '<option>'+esc(p)+'</option>';}).join('')+'</select><button type="button" class="btn btn-secondary btn-sm" onclick="agregarProductoProd()" title="Agregar producto">+</button></div></div>'+
+      '<div class="field" style="grid-column:1 / -1;"><label>Detalle adicional (opcional)</label><input id="prod-desc" placeholder="Ej: Corte N5"></div>'+
+      '</div>'+
+      '<div style="margin-top:16px;">'+
+      '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">'+
+      '<p class="card-title" style="margin-bottom:0;">Cantidades por talle / color</p>'+
+      '<span style="font-size:13px;color:var(--text-2);font-weight:500;">Total: <strong id="prod-total">0</strong> prendas</span></div>'+
+      '<div class="items-table"><table><thead><tr><th>Talle</th><th>Color</th><th style="width:100px;">Cantidad</th><th style="width:36px;"></th></tr></thead><tbody id="prod-desglose-rows"></tbody></table></div>'+
+      '<button class="btn btn-secondary btn-sm" style="margin-top:8px;" onclick="addProdDesgloseRow()">+ Agregar talle/color</button>'+
+      '</div>'+
+      '<div class="field" style="margin-top:16px;"><label>Observaciones</label><input id="prod-obs" placeholder="Notas opcionales"></div>'+
+      '<div style="margin-top:16px;"><button class="btn btn-primary" onclick="guardarProduccion()">Registrar orden</button></div></div></div>';
+  }
+
+  html += '<div class="card" style="margin-bottom:16px;"><div class="card-body" style="padding-bottom:0;"><p class="card-title" style="color:var(--blue);">En proceso - '+enProceso.length+' orden'+(enProceso.length!==1?'es':'')+' / '+enProceso.reduce(function(s,p){return s+(p.cantidadTotal||p.cantidad||0);},0)+' prendas</p></div>';
+  if(enProceso.length===0){
+    html += '<div class="empty" style="padding:28px;"><p>No hay órdenes activas en este taller</p></div>';
+  }else{
+    html += '<div class="table-wrap"><table><thead><tr><th>Inicio</th><th>Entrega est.</th><th>Descripción del corte</th><th>N° Remito</th><th>Desglose talle/color</th><th>Total</th><th>Acción</th></tr></thead><tbody>';
+    enProceso.forEach(function(p){
+      html += '<tr><td style="font-family:var(--mono);font-size:12px;">'+p.fechaInicio+'</td>'+
+      '<td style="font-family:var(--mono);font-size:12px;color:'+(p.fechaEntrega?'var(--text)':'var(--text-3)')+';">'+(p.fechaEntrega||'-')+'</td>'+
+      '<td style="font-weight:500;">'+esc(p.descripcion)+'</td><td>'+(p.nroRemito?('<span class="sku-chip">'+esc(p.nroRemito)+'</span>'):'-')+'</td>'+
+      '<td>'+desgloseHtml(p.desglose)+'</td><td style="font-weight:600;">'+(p.cantidadTotal||p.cantidad||0)+'</td>'+
+      '<td><button class="btn btn-secondary btn-sm" onclick="finalizarProduccion('+p.id+')">Finalizar</button></td></tr>';
+    });
+    html += '</tbody></table></div>';
+  }
+  html += '</div>';
+
+  if(finalizadas.length>0){
+    html += '<div class="card"><div class="card-body" style="padding-bottom:0;"><p class="card-title" style="color:var(--success);">Finalizadas - '+finalizadas.length+'</p></div><div class="table-wrap"><table><thead><tr><th>Inicio</th><th>Descripción</th><th>N° Remito</th><th>Desglose talle/color</th><th>Total</th></tr></thead><tbody>';
+    finalizadas.forEach(function(p){
+      html += '<tr style="opacity:0.7;"><td style="font-family:var(--mono);font-size:12px;">'+p.fechaInicio+'</td><td>'+esc(p.descripcion)+'</td>'+
+      '<td>'+(p.nroRemito?('<span class="sku-chip">'+esc(p.nroRemito)+'</span>'):'-')+'</td><td>'+desgloseHtml(p.desglose)+'</td><td style="font-weight:600;">'+(p.cantidadTotal||p.cantidad||0)+'</td></tr>';
+    });
+    html += '</tbody></table></div></div>';
+  }
+
+  document.getElementById('prod-panel').innerHTML = html;
+  if(prodShowForm) renderProdDesgloseRows();
+}
+
+function desgloseHtml(desglose){
+  if(!desglose || desglose.length===0) return '<span style="color:var(--text-3);">-</span>';
+  return desglose.map(function(d){
+    return '<span class="badge badge-info" style="margin:1px;">'+esc(d.talle||'-')+(d.color?(' / '+esc(d.color)):'')+': '+d.cantidad+'</span>';
+  }).join(' ');
+}
+
+function agregarProductoProd(){
+  const n = agregarProducto();
+  if(!n) return;
+  const sel = document.getElementById('prod-producto');
+  if(sel){
+    sel.innerHTML = '<option value="">Seleccionar producto...</option>' + DB.productos.map(function(p){return '<option>'+esc(p)+'</option>';}).join('');
+    sel.value = n;
+  }
+}
+
+function guardarProduccion(){
+  const fechaInicio = document.getElementById('prod-fecha-inicio').value;
+  const fechaEntrega = document.getElementById('prod-fecha-entrega').value;
+  const producto = document.getElementById('prod-producto').value;
+  const detalle = document.getElementById('prod-desc').value;
+  const nroRemito = document.getElementById('prod-remito').value;
+  const obs = document.getElementById('prod-obs').value;
+
+  if(!producto){ alert('Seleccioná un producto'); return; }
+  const descripcion = detalle ? (producto+' - '+detalle) : producto;
+
+  const desglose = prodDesglose.filter(function(d){return (parseInt(d.cantidad)||0)>0;}).map(function(d){
+    return {talle:d.talle, color:d.color, cantidad: parseInt(d.cantidad)||0, disponible: parseInt(d.cantidad)||0};
+  });
+  const cantidadTotal = desglose.reduce(function(s,d){return s+d.cantidad;},0);
+  if(cantidadTotal<=0){ alert('Ingresá al menos una cantidad mayor a 0'); return; }
+
+  DB.producciones.unshift({
+    id: nextId(), fechaInicio: fechaInicio, fechaEntrega: fechaEntrega, taller: tallerActivo, producto: producto, descripcion: descripcion, nroRemito: nroRemito,
+    desglose: desglose, cantidadTotal: cantidadTotal,
+    estado:'en_proceso', observaciones: obs, createdAt: new Date().toISOString()
+  });
+  saveData();
+  toast('Producción registrada');
+  prodShowForm=false;
+  renderProduccion();
+}
+function finalizarProduccion(id){
+  const p = DB.producciones.find(function(x){return x.id===id;});
+  if(p){ p.estado='finalizado'; saveData(); toast('Producción finalizada'); renderProduccion(); }
+}
+
+function renderReportes(){
+  const totalIngresos = DB.ingresos.length;
+  const totalPrendas = DB.ingresos.reduce(function(s,i){return s+i.items.reduce(function(a,it){return a+it.cantidad;},0);},0);
+  const totalFallas = DB.ingresos.reduce(function(s,i){return s+i.fallas.length;},0);
+  const today = new Date().toISOString().slice(0,10);
+  const ingresoHoy = DB.ingresos.filter(function(i){return i.fecha===today;}).length;
+  const enEstampa = DB.estampas.filter(function(e){return e.estado==='en_proceso';}).reduce(function(s,e){return s+e.cantidad;},0);
+  const enProduccion = DB.producciones.filter(function(p){return p.estado==='en_proceso';}).reduce(function(s,p){return s+(p.cantidadTotal||p.cantidad||0);},0);
+  const totalEstampado = DB.estampas.filter(function(e){return e.estado==='finalizado';}).reduce(function(s,e){return s+e.cantidad;},0);
+  const totalEnviadoConfeccion = DB.producciones.reduce(function(s,p){return s+(p.cantidadTotal||p.cantidad||0);},0);
+  const totalConfeccionado = DB.producciones.filter(function(p){return p.estado==='finalizado';}).reduce(function(s,p){return s+(p.cantidadTotal||p.cantidad||0);},0);
+
+  document.getElementById('reportes-metrics').innerHTML =
+    '<div class="metric-card"><div class="metric-label">Ingresos totales</div><div class="metric-value">'+totalIngresos+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Prendas ingresadas</div><div class="metric-value">'+totalPrendas.toLocaleString()+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Fallas registradas</div><div class="metric-value" style="color:var(--warn);">'+totalFallas+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Ingresos hoy</div><div class="metric-value" style="color:var(--blue);">'+ingresoHoy+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">En estampa (prendas)</div><div class="metric-value" style="color:var(--blue);">'+enEstampa+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">En producción (prendas)</div><div class="metric-value" style="color:var(--success);">'+enProduccion+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Prendas estampadas</div><div class="metric-value" style="color:var(--blue);">'+totalEstampado.toLocaleString()+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Enviado a confeccionar</div><div class="metric-value">'+totalEnviadoConfeccion.toLocaleString()+'</div></div>'+
+    '<div class="metric-card"><div class="metric-label">Prendas confeccionadas</div><div class="metric-value" style="color:var(--success);">'+totalConfeccionado.toLocaleString()+'</div></div>';
+
+  const porTipo = {};
+  DB.ingresos.forEach(function(i){i.fallas.forEach(function(f){ porTipo[f.tipo||'Otra']=(porTipo[f.tipo||'Otra']||0)+1; });});
+  const tipoEntries = Object.entries(porTipo).sort(function(a,b){return b[1]-a[1];});
+  if(tipoEntries.length===0){
+    document.getElementById('reportes-tipo').innerHTML = '<div class="empty" style="padding:24px;"><p>Sin fallas registradas</p></div>';
+  }else{
+    const max = Math.max.apply(null, tipoEntries.map(function(e){return e[1];}));
+    document.getElementById('reportes-tipo').innerHTML = tipoEntries.map(function(entry){
+      const tipo=entry[0], cant=entry[1];
+      return '<div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:4px;"><span>'+esc(tipo)+'</span><span style="font-weight:500;">'+cant+'</span></div>'+
+      '<div style="background:var(--bg);border-radius:999px;height:6px;overflow:hidden;"><div style="width:'+Math.round((cant/max)*100)+'%;height:100%;background:var(--warn);border-radius:999px;"></div></div></div>';
+    }).join('');
+  }
+
+  const tallerMap = {};
+  DB.ingresos.forEach(function(i){
+    i.fallas.forEach(function(f){
+      const taller = i.taller||'Sin especificar';
+      const tipo = f.tipo||'-';
+      const k=taller+'|'+tipo;
+      if(!tallerMap[k]) tallerMap[k]={taller:taller,tipo:tipo,cant:0};
+      tallerMap[k].cant++;
+    });
+  });
+  const tallerList = Object.values(tallerMap).sort(function(a,b){return b.cant-a.cant;});
+  if(tallerList.length===0){
+    document.getElementById('reportes-taller').innerHTML = '<div class="empty" style="padding:24px;"><p>Sin datos</p></div>';
+  }else{
+    let html = '<div class="table-wrap"><table><thead><tr><th>Taller</th><th>Tipo</th><th>Cant.</th></tr></thead><tbody>';
+    tallerList.slice(0,20).forEach(function(r){
+      html += '<tr><td style="color:var(--text-2);">'+esc(r.taller)+'</td><td>'+esc(r.tipo)+'</td><td><span class="badge badge-warn">'+r.cant+'</span></td></tr>';
+    });
+    html += '</tbody></table></div>';
+    document.getElementById('reportes-taller').innerHTML = html;
+  }
+}
+
+function guardarProductoNuevo(){
+  const input = document.getElementById('prod-nuevo-nombre');
+  const n = (input.value||'').trim();
+  if(!n){ alert('Ingresá un nombre de producto'); return; }
+  if(DB.productos.some(function(p){return p.toLowerCase()===n.toLowerCase();})){
+    toast('Ese producto ya existe');
+    return;
+  }
+  DB.productos.push(n);
+  saveData();
+  input.value='';
+  renderProductos();
+  toast('Producto agregado');
+}
+function renderListBadges(containerId, list, removeFnName){
+  const wrap = document.getElementById(containerId);
+  if(!wrap) return;
+  if(list.length===0){
+    wrap.innerHTML = '<span style="color:var(--text-3);font-size:13px;">Todavía no agregaste nada</span>';
+    return;
+  }
+  wrap.innerHTML = list.map(function(item){
+    const safe = esc(item).replace(/'/g,"\\'");
+    return '<span class="badge badge-info" style="font-size:13px;padding:6px 10px;">'+esc(item)+
+      ' <button onclick="'+removeFnName+'(\''+safe+'\')" style="border:none;background:none;cursor:pointer;color:var(--blue);font-weight:700;margin-left:4px;">x</button></span>';
+  }).join('');
+}
+
+function renderConfig(){
+  renderProductos();
+  renderListBadges('colores-listado', DB.colores, 'eliminarColor');
+  renderListBadges('talles-listado', getTalles(), 'eliminarTalle');
+  renderListBadges('operarios-listado', DB.operarios, 'eliminarOperario');
+  renderListBadges('talleres-confeccion-listado', DB.talleresConfeccion, 'eliminarTallerConfeccionCfg');
+  renderListBadges('talleres-estampa-listado', DB.talleresEstampa, 'eliminarTallerEstampaCfg');
+  renderPermisosOperario();
+}
+function renderPermisosOperario(){
+  const wrap = document.getElementById('permisos-operario-listado');
+  if(!wrap) return;
+  if(!DB.permisosOperario) DB.permisosOperario = PERMISOS_OPERARIO_DEFAULT.slice();
+  wrap.innerHTML = PAGINAS.map(function(p){
+    const checked = DB.permisosOperario.indexOf(p.key)!==-1;
+    return '<label style="display:flex;align-items:center;gap:8px;font-size:13px;cursor:pointer;">'+
+      '<input type="checkbox" '+(checked?'checked':'')+' onchange="togglePermisoOperario(\''+p.key+'\',this.checked)"> '+esc(p.label)+'</label>';
+  }).join('');
+}
+function togglePermisoOperario(key, checked){
+  if(!DB.permisosOperario) DB.permisosOperario = PERMISOS_OPERARIO_DEFAULT.slice();
+  if(checked){
+    if(DB.permisosOperario.indexOf(key)===-1) DB.permisosOperario.push(key);
+  }else{
+    DB.permisosOperario = DB.permisosOperario.filter(function(k){return k!==key;});
+  }
+  saveData();
+  applyRoleVisibility();
+}
+
+function guardarColorNuevo(){
+  const input = document.getElementById('color-nuevo-nombre');
+  const n = (input.value||'').trim();
+  if(!n){ alert('Ingresá un nombre de color'); return; }
+  if(DB.colores.some(function(c){return c.toLowerCase()===n.toLowerCase();})){ toast('Ese color ya existe'); return; }
+  DB.colores.push(n); saveData(); input.value=''; renderConfig(); toast('Color agregado');
+}
+function eliminarColor(nombre){
+  if(!confirm('¿Eliminar el color "'+nombre+'"?')) return;
+  DB.colores = DB.colores.filter(function(c){return c!==nombre;});
+  saveData(); renderConfig();
+}
+
+function guardarTalleNuevo(){
+  const input = document.getElementById('talle-nuevo-nombre');
+  const n = (input.value||'').trim();
+  if(!n){ alert('Ingresá un talle'); return; }
+  if(!DB.talles) DB.talles = TALLES_DEFAULT.slice();
+  if(DB.talles.some(function(t){return t.toLowerCase()===n.toLowerCase();})){ toast('Ese talle ya existe'); return; }
+  DB.talles.push(n); saveData(); input.value=''; renderConfig(); toast('Talle agregado');
+}
+function eliminarTalle(nombre){
+  if(!confirm('¿Eliminar el talle "'+nombre+'"?')) return;
+  DB.talles = getTalles().filter(function(t){return t!==nombre;});
+  saveData(); renderConfig();
+}
+
+function guardarOperarioNuevo(){
+  const input = document.getElementById('op-nuevo-nombre');
+  const n = (input.value||'').trim();
+  if(!n){ alert('Ingresá un nombre'); return; }
+  if(DB.operarios.some(function(o){return o.toLowerCase()===n.toLowerCase();})){ toast('Ese operario ya existe'); return; }
+  DB.operarios.push(n); saveData(); input.value=''; renderConfig(); toast('Operario agregado');
+}
+function eliminarOperario(nombre){
+  if(!confirm('¿Eliminar al operario "'+nombre+'"?')) return;
+  DB.operarios = DB.operarios.filter(function(o){return o!==nombre;});
+  saveData(); renderConfig();
+}
+
+function guardarTallerConfeccionNuevo(){
+  const input = document.getElementById('tc-nuevo-nombre');
+  const n = (input.value||'').trim();
+  if(!n){ alert('Ingresá un nombre'); return; }
+  if(DB.talleresConfeccion.some(function(t){return t.toLowerCase()===n.toLowerCase();})){ toast('Ese taller ya existe'); return; }
+  DB.talleresConfeccion.push(n); saveData(); input.value=''; renderConfig(); toast('Taller agregado');
+}
+function eliminarTallerConfeccionCfg(nombre){
+  if(!confirm('¿Eliminar el taller de confección "'+nombre+'"?')) return;
+  DB.talleresConfeccion = DB.talleresConfeccion.filter(function(t){return t!==nombre;});
+  saveData(); renderConfig();
+}
+
+function guardarTallerEstampaNuevo(){
+  const input = document.getElementById('te-nuevo-nombre');
+  const n = (input.value||'').trim();
+  if(!n){ alert('Ingresá un nombre'); return; }
+  if(DB.talleresEstampa.some(function(t){return t.toLowerCase()===n.toLowerCase();})){ toast('Ese taller ya existe'); return; }
+  DB.talleresEstampa.push(n); saveData(); input.value=''; renderConfig(); toast('Taller agregado');
+}
+function eliminarTallerEstampaCfg(nombre){
+  if(!confirm('¿Eliminar el taller de estampa "'+nombre+'"?')) return;
+  DB.talleresEstampa = DB.talleresEstampa.filter(function(t){return t!==nombre;});
+  saveData(); renderConfig();
+}
+
+function renderProductos(){
+  const wrap = document.getElementById('productos-listado');
+  if(!wrap) return;
+  if(DB.productos.length===0){
+    wrap.innerHTML = '<span style="color:var(--text-3);font-size:13px;">Todavía no agregaste productos</span>';
+  }else{
+    wrap.innerHTML = DB.productos.map(function(p){
+      return '<span class="badge badge-info" style="font-size:13px;padding:6px 10px;">'+esc(p)+
+        ' <button onclick="eliminarProducto(\''+esc(p).replace(/'/g,"\\'")+'\')" style="border:none;background:none;cursor:pointer;color:var(--blue);font-weight:700;margin-left:4px;">x</button></span>';
+    }).join('');
+  }
+  refreshProductosDatalist();
+}
+
+function guardarCatalogo(){
+  const sku = document.getElementById('cat-sku').value.trim();
+  const descripcion = document.getElementById('cat-desc').value.trim();
+  const talle = document.getElementById('cat-talle').value.trim();
+  const color = document.getElementById('cat-color').value.trim();
+  const categoria = document.getElementById('cat-categoria').value.trim();
+
+  if(!sku||!descripcion){ alert('SKU y descripción son requeridos'); return; }
+
+  const idx = DB.catalogo.findIndex(function(c){return c.sku.toLowerCase()===sku.toLowerCase();});
+  const item = {sku:sku,descripcion:descripcion,talle:talle,color:color,categoria:categoria};
+  if(idx>=0) DB.catalogo[idx]=item; else DB.catalogo.push(item);
+  saveData();
+  toast('Artículo guardado');
+  ['cat-sku','cat-desc','cat-talle','cat-color','cat-categoria'].forEach(function(id){document.getElementById(id).value='';});
+  renderCatalogo();
+}
+
+function renderCatalogo(){
+  const search = (document.getElementById('cat-search').value||'').toLowerCase();
+  const filtered = DB.catalogo.filter(function(i){return i.sku.toLowerCase().includes(search)||(i.descripcion||'').toLowerCase().includes(search);})
+    .sort(function(a,b){return (a.descripcion||'').localeCompare(b.descripcion||'');});
+  const tbody = document.getElementById('cat-tbody');
+  if(filtered.length===0){
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><p>No hay artículos en el catálogo todavía</p></div></td></tr>';
+    return;
+  }
+  tbody.innerHTML = filtered.map(function(i){
+    const safeSku = esc(i.sku).replace(/'/g,"\\'");
+    return '<tr><td style="cursor:pointer;" onclick="editCatalogo(\''+safeSku+'\')"><span class="sku-chip">'+esc(i.sku)+'</span></td>'+
+    '<td style="cursor:pointer;" onclick="editCatalogo(\''+safeSku+'\')">'+esc(i.descripcion)+'</td>'+
+    '<td style="cursor:pointer;" onclick="editCatalogo(\''+safeSku+'\')">'+esc(i.talle||'-')+'</td>'+
+    '<td style="cursor:pointer;" onclick="editCatalogo(\''+safeSku+'\')">'+esc(i.color||'-')+'</td>'+
+    '<td style="cursor:pointer;" onclick="editCatalogo(\''+safeSku+'\')">'+(i.categoria?('<span class="badge badge-info">'+esc(i.categoria)+'</span>'):'-')+'</td>'+
+    '<td><button class="btn btn-danger btn-sm" onclick="event.stopPropagation();eliminarCatalogo(\''+safeSku+'\')">x</button></td></tr>';
+  }).join('');
+}
+function eliminarCatalogo(sku){
+  if(!confirm('¿Eliminar el artículo "'+sku+'" del catálogo?')) return;
+  DB.catalogo = DB.catalogo.filter(function(c){return c.sku!==sku;});
+  saveData();
+  renderCatalogo();
+  toast('Artículo eliminado');
+}
+function editCatalogo(sku){
+  const item = DB.catalogo.find(function(c){return c.sku===sku;});
+  if(!item) return;
+  document.getElementById('cat-sku').value=item.sku;
+  document.getElementById('cat-desc').value=item.descripcion;
+  document.getElementById('cat-talle').value=item.talle||'';
+  document.getElementById('cat-color').value=item.color||'';
+  document.getElementById('cat-categoria').value=item.categoria||'';
+  window.scrollTo({top:0,behavior:'smooth'});
+}
+
+function esc(str){
+  if(str===null||str===undefined) return '';
+  return String(str).replace(/[&<>"']/g, function(m){
+    return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m];
+  });
+}
+
+const ROLE_KEY = 'mkf_app_user_logged';
+function getUsuarios(){ return (DB.usuarios && DB.usuarios.length) ? DB.usuarios : USUARIOS_DEFAULT; }
+function populateLoginSelect(){
+  const sel = document.getElementById('login-usuario');
+  if(!sel) return;
+  sel.innerHTML = getUsuarios().map(function(u){return '<option value="'+esc(u.nombre)+'">'+esc(u.nombre)+'</option>';}).join('');
+}
+function intentarLogin(){
+  const nombre = document.getElementById('login-usuario').value;
+  const pass = document.getElementById('login-password').value;
+  const user = getUsuarios().find(function(u){return u.nombre===nombre;});
+  const errorEl = document.getElementById('login-error');
+  if(!user || user.password!==pass){
+    errorEl.textContent = 'Contraseña incorrecta';
+    return;
+  }
+  errorEl.textContent = '';
+  document.getElementById('login-password').value='';
+  localStorage.setItem(ROLE_KEY, nombre);
+  document.getElementById('role-modal').style.display='none';
+  applyRoleVisibility();
+}
+function cambiarUsuario(){
+  localStorage.removeItem(ROLE_KEY);
+  populateLoginSelect();
+  document.getElementById('login-password').value='';
+  document.getElementById('login-error').textContent='';
+  document.getElementById('role-modal').style.display='flex';
+}
+function applyRoleVisibility(){
+  const nombre = localStorage.getItem(ROLE_KEY);
+  const user = getUsuarios().find(function(u){return u.nombre===nombre;}) || getUsuarios()[0];
+  const isAdmin = user.tipo==='admin';
+  const allowed = (DB.permisosOperario && DB.permisosOperario.length) ? DB.permisosOperario : PERMISOS_OPERARIO_DEFAULT;
+  document.querySelectorAll('.nav-item').forEach(function(btn){
+    const page = btn.getAttribute('data-page');
+    if(isAdmin || allowed.indexOf(page)!==-1){
+      btn.style.display='';
+    }else{
+      btn.style.display='none';
+    }
+  });
+  const badge = document.getElementById('role-badge');
+  if(badge) badge.textContent = user.nombre;
+  const activeBtn = document.querySelector('.nav-item.active');
+  if(activeBtn && activeBtn.style.display==='none'){
+    const firstVisible = document.querySelector('.nav-item:not([style*="display: none"])');
+    if(firstVisible) showPage(firstVisible.getAttribute('data-page'));
+  }
+}
+function initRole(){
+  populateLoginSelect();
+  const nombre = localStorage.getItem(ROLE_KEY);
+  const user = getUsuarios().find(function(u){return u.nombre===nombre;});
+  if(user){
+    document.getElementById('role-modal').style.display='none';
+    applyRoleVisibility();
+  }else{
+    document.getElementById('role-modal').style.display='flex';
+  }
+}
+
+initIngresoForm();
+initRole();
+</script>
+</body>
+</html>
